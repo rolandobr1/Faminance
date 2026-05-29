@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the incoming data has the correct familyId
+    function isCorrectFamily(familyId) {
+      return request.resource.data.familyId == familyId;
+    }
+    
+    // Allow read/write access only to documents that match the 'main-family' ID
+    // and if the user is authenticated. This is a basic rule for a single-family setup.
+    match /{collection}/{docId} {
+      allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/$(collection)/$(docId)).data.familyId == 'main-family';
+      allow create: if isAuthenticated() && isCorrectFamily('main-family');
+    }
+  }
+}
