@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Banknote, CreditCard as CreditCardIcon, DollarSign, PlusCircle, MoreHorizontal, ArrowRightLeft, HandCoins } from "lucide-react";
+import { Banknote, CreditCard as CreditCardIcon, DollarSign, PlusCircle, MoreHorizontal, ArrowRightLeft, HandCoins, TrendingDown, X, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     DropdownMenu,
@@ -37,6 +44,9 @@ import { CreditCardForm } from "@/components/faminance/accounts/credit-card-form
 import { TransferForm } from "@/components/faminance/accounts/transfer-form";
 import { Header } from "@/components/faminance/header";
 import { useAccountsPage } from "./use-accounts-page";
+import { useFamilyData } from "@/context/family-data-context";
+import { useState, useMemo } from "react";
+import type { CreditCard } from "@/lib/types";
 
 export default function AccountsPage() {
     const {
@@ -62,6 +72,16 @@ export default function AccountsPage() {
         deleteCreditCard,
         getAccountBalance,
     } = useAccountsPage();
+
+    const { transactions } = useFamilyData();
+    const [selectedCardDetail, setSelectedCardDetail] = useState<CreditCard | null>(null);
+
+    const cardTransactions = useMemo(() => {
+        if (!selectedCardDetail) return [];
+        return transactions
+            .filter(t => t.creditCardId === selectedCardDetail.id)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [selectedCardDetail, transactions]);
 
     const getProgressColor = (progress: number) => {
         if (progress > 85) return "bg-destructive";
@@ -220,39 +240,46 @@ export default function AccountsPage() {
                                 const hasUSD = card.limitUSD > 0 || card.spentUSD > 0;
 
                                 return (
-                                    <div key={card.id} className="rounded-lg border bg-card p-4 flex flex-col gap-3">
+                                    <div 
+                                        key={card.id} 
+                                        className="rounded-xl border bg-card p-4 flex flex-col gap-3 cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-all duration-200 group"
+                                        onClick={() => setSelectedCardDetail(card)}
+                                    >
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <span className="font-medium font-headline">{card.name} ({card.bank})</span>
                                                 <p className="text-sm text-muted-foreground">**** {card.last4}</p>
                                             </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => openEditCardDialog(card)}>Editar</DropdownMenuItem>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>Eliminar</DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la tarjeta "{card.name}".
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteCreditCard(card.id)}>Eliminar</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <div className="flex items-center gap-1">
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1" onClick={e => e.stopPropagation()}>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); openEditCardDialog(card); }}>Editar</DropdownMenuItem>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>Eliminar</DropdownMenuItem>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente la tarjeta "{card.name}".
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteCreditCard(card.id)}>Eliminar</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
 
                                         {hasDOP && (
@@ -333,6 +360,82 @@ export default function AccountsPage() {
                 </Tabs>
             </DialogContent>
         </Dialog>
+
+        {/* Card Transactions Sheet */}
+        <Sheet open={!!selectedCardDetail} onOpenChange={(open) => !open && setSelectedCardDetail(null)}>
+            <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
+                <SheetHeader className="p-6 pb-4 border-b bg-gradient-to-r from-slate-900 to-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                            <CreditCardIcon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <SheetTitle className="text-xl">{selectedCardDetail?.name}</SheetTitle>
+                            <SheetDescription>{selectedCardDetail?.bank} &bull; **** {selectedCardDetail?.last4}</SheetDescription>
+                        </div>
+                    </div>
+
+                    {/* Quick stats */}
+                    {selectedCardDetail && (
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                            {(selectedCardDetail.limitDOP > 0 || selectedCardDetail.spentDOP > 0) && (
+                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                    <p className="text-xs text-slate-400 mb-1">Gastado DOP</p>
+                                    <p className="font-bold text-red-400">{selectedCardDetail.spentDOP.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}</p>
+                                    <p className="text-xs text-slate-500">de {selectedCardDetail.limitDOP.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}</p>
+                                </div>
+                            )}
+                            {(selectedCardDetail.limitUSD > 0 || selectedCardDetail.spentUSD > 0) && (
+                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                    <p className="text-xs text-slate-400 mb-1">Gastado USD</p>
+                                    <p className="font-bold text-red-400">{selectedCardDetail.spentUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                                    <p className="text-xs text-slate-500">de {selectedCardDetail.limitUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-3">
+                        {cardTransactions.length} transacci{cardTransactions.length === 1 ? 'ón' : 'ones'}
+                    </p>
+
+                    {cardTransactions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                                <TrendingDown className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <p className="font-semibold">Sin transacciones</p>
+                            <p className="text-sm text-muted-foreground mt-1">No hay gastos registrados con esta tarjeta.</p>
+                        </div>
+                    ) : (
+                        cardTransactions.map(tx => (
+                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl bg-card border hover:border-primary/30 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{tx.description || tx.category}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-xs text-muted-foreground">
+                                            {new Date(tx.date).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </span>
+                                        <span className="text-xs bg-muted px-1.5 py-0.5 rounded-md text-muted-foreground">{tx.category}</span>
+                                    </div>
+                                </div>
+                                <p className={cn(
+                                    "font-bold text-sm ml-3 shrink-0",
+                                    tx.type === 'income' ? 'text-green-500' : 'text-red-400'
+                                )}>
+                                    {tx.type === 'income' ? '+' : '-'}
+                                    {tx.currency === 'USD'
+                                        ? tx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                                        : tx.amount.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
+                                </p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </SheetContent>
+        </Sheet>
         </>
     );
 }

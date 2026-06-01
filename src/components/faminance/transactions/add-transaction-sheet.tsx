@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, ArrowDownUp, Receipt, Loader2 } from "lucide-react";
+import { Upload, ArrowDownUp, Receipt, Loader2, TrendingUp, TrendingDown, CalendarIcon, AlignLeft, RefreshCw, Users, Sparkles } from "lucide-react";
 import { iconMap } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
 import { useState, useMemo, useEffect } from "react";
@@ -133,8 +133,8 @@ export function AddTransactionSheet({
             setSelectedCategory(undefined);
         }
         
-        const paymentMethodValue = transactionToEdit?.paymentMethod || defaultPaymentMethod;
-        const paymentMethod = paymentMethodValue ? paymentMethodOptions.find(p => p.value === paymentMethodValue) : undefined;
+        const paymentMethodValue = transactionToEdit?.paymentMethod || defaultPaymentMethod || 'Efectivo';
+        const paymentMethod = paymentMethodOptions.find(p => p.value === paymentMethodValue);
         setSelectedPaymentMethod(paymentMethod);
         
         const cardId = transactionToEdit?.creditCardId || defaultCreditCardId;
@@ -194,6 +194,7 @@ export function AddTransactionSheet({
         value: cat.value,
         label: cat.label,
         icon: cat.icon,
+        parentId: cat.parentId,
     }));
 
 
@@ -295,49 +296,26 @@ export function AddTransactionSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? 'bottom' : 'right'} className="grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
-            <SheetHeader>
-                <SheetTitle className="font-headline">{isEditing ? 'Editar Transacción' : 'Añadir Transacción'}</SheetTitle>
-                <SheetDescription>
-                    {isEditing ? 'Modifique los detalles de la transacción.' : 'Registre un nuevo ingreso o gasto para su familia.'}
+        <SheetContent side={isMobile ? 'bottom' : 'right'} className="grid grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] bg-[#0d121f] border-l-white/10 p-0 sm:max-w-md">
+            <SheetHeader className="p-6 pb-4 border-b border-white/5 bg-[#111827]/80 backdrop-blur-md relative z-10">
+                <SheetTitle className="font-headline text-2xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                    {isEditing ? 'Editar Transacción' : 'Nueva Transacción'}
+                </SheetTitle>
+                <SheetDescription className="text-slate-400">
+                    {isEditing ? 'Modifica los detalles.' : 'Registra un ingreso o gasto.'}
                 </SheetDescription>
             </SheetHeader>
-            <form key={key} id="transaction-form" onSubmit={handleSubmit} className="overflow-y-auto p-1">
-                <div className="grid gap-4 py-4">
-                    <div className={cn(
-                        "p-4 rounded-lg bg-muted/50",
-                        transactionType === 'income' ? 'text-green-500' : 'text-destructive'
-                    )}>
-                        <Label htmlFor="amount" className="text-sm text-muted-foreground">Monto de la transacción</Label>
-                        <div className="flex items-baseline justify-center gap-1 mt-1">
-                            <span className="text-xl md:text-2xl font-semibold opacity-70">{currency === 'DOP' ? 'RD$' : 'US$'}</span>
-                            <Input
-                                id="amount"
-                                name="amount"
-                                type="text"
-                                placeholder="0"
-                                required
-                                value={displayAmount}
-                                onChange={handleAmountChange}
-                                className={cn(
-                                    "text-4xl md:text-5xl font-bold font-headline text-center border-none bg-transparent h-auto p-0 focus-visible:ring-0 shadow-none w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                                )}
-                                inputMode="decimal"
-                            />
-                            <Select value={currency} onValueChange={(value) => setCurrency(value as 'DOP' | 'USD')}>
-                                <SelectTrigger className="border-none bg-transparent text-xl md:text-2xl font-semibold focus:ring-0 focus:ring-offset-0 min-w-[70px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="DOP">DOP</SelectItem>
-                                    <SelectItem value="USD">USD</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+            <form key={key} id="transaction-form" onSubmit={handleSubmit} className="overflow-y-auto overflow-x-hidden relative flex-1 min-h-0 overscroll-contain">
+                {/* Background glow */}
+                <div className={cn(
+                    "absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[150px] rounded-full blur-[100px] pointer-events-none opacity-20 transition-colors duration-500",
+                    transactionType === 'income' ? 'bg-green-500' : 'bg-red-500'
+                )} />
 
+                <div className="p-6 space-y-6 relative z-10">
+                    {/* TYPE SELECTOR */}
                     {!isSimplified && (
-                        <div className="flex items-center justify-center gap-2 rounded-full bg-muted p-1">
+                        <div className="flex items-center p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative shadow-inner">
                             <Button 
                                 type="button" 
                                 onClick={() => {
@@ -346,9 +324,16 @@ export function AddTransactionSheet({
                                         setSelectedCategory(undefined);
                                     }
                                 }}
-                                className={cn("rounded-full flex-1", transactionType === 'expense' ? 'bg-background shadow' : 'bg-transparent text-muted-foreground hover:bg-background/50')}
-                                size="sm"
-                            >Gasto</Button>
+                                className={cn(
+                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
+                                    transactionType === 'expense' 
+                                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                                        : 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                                )}
+                                variant="ghost"
+                            >
+                                <TrendingDown className="h-4 w-4" /> Gasto
+                            </Button>
                             <Button 
                                 type="button" 
                                 onClick={() => {
@@ -360,13 +345,60 @@ export function AddTransactionSheet({
                                         setSelectedPaymentMethod(undefined);
                                     }
                                 }}
-                                className={cn("rounded-full flex-1", transactionType === 'income' ? 'bg-background shadow' : 'bg-transparent text-muted-foreground hover:bg-background/50')}
-                                size="sm"
-                            >Ingreso</Button>
+                                className={cn(
+                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
+                                    transactionType === 'income' 
+                                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                                        : 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                                )}
+                                variant="ghost"
+                            >
+                                <TrendingUp className="h-4 w-4" /> Ingreso
+                            </Button>
                         </div>
                     )}
 
-                    <div className={cn("grid gap-4", !isSimplified && "grid-cols-1 md:grid-cols-2")}>
+                    {/* AMOUNT DISPLAY */}
+                    <div className={cn(
+                        "flex flex-col items-center justify-center p-6 rounded-3xl bg-gradient-to-b from-white/[0.08] to-transparent border border-white/10 backdrop-blur-md shadow-2xl transition-colors duration-500 relative overflow-hidden group",
+                        transactionType === 'income' ? 'shadow-green-500/10' : 'shadow-red-500/10'
+                    )}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+                        <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Monto</Label>
+                        <div className="flex items-center justify-center gap-2">
+                            <Select value={currency} onValueChange={(value) => setCurrency(value as 'DOP' | 'USD')}>
+                                <SelectTrigger className="border-none bg-white/5 hover:bg-white/10 rounded-xl h-10 px-3 text-slate-300 font-medium focus:ring-0 w-auto shadow-inner transition-colors">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#111827] border-white/10 text-white">
+                                    <SelectItem value="DOP">DOP</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            
+                            <span className={cn(
+                                "text-4xl md:text-5xl font-semibold opacity-50 transition-colors",
+                                transactionType === 'income' ? 'text-green-500' : 'text-red-500'
+                            )}>$</span>
+                            <Input
+                                id="amount"
+                                name="amount"
+                                type="text"
+                                placeholder="0"
+                                required
+                                value={displayAmount}
+                                onChange={handleAmountChange}
+                                className={cn(
+                                    "text-5xl md:text-6xl font-bold font-headline border-none bg-transparent h-auto p-0 focus-visible:ring-0 shadow-none w-full max-w-[200px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors",
+                                    transactionType === 'income' ? 'text-green-400 placeholder:text-green-900/50' : 'text-red-400 placeholder:text-red-900/50'
+                                )}
+                                inputMode="decimal"
+                            />
+                        </div>
+                    </div>
+
+                    {/* SELECTORS GRID */}
+                    <div className={cn("grid gap-3", !isSimplified && "grid-cols-2")}>
                          {!isSimplified && (
                             <SelectionModal 
                                 title="Categoría" 
@@ -384,6 +416,7 @@ export function AddTransactionSheet({
                         />
                     </div>
                     
+                    {/* CONDITIONAL SELECTIONS */}
                     {selectedPaymentMethod?.value === 'Pago de Tarjeta' && (
                          <SelectionModal 
                             title="Pagar Tarjeta" 
@@ -392,7 +425,6 @@ export function AddTransactionSheet({
                             onSelect={(option) => setSelectedCard(creditCards.find(c => c.id === option.value))}
                         />
                     )}
-
                     {selectedPaymentMethod?.value === 'Tarjeta de Crédito' && (
                         <SelectionModal 
                             title="Tarjeta Utilizada" 
@@ -410,91 +442,154 @@ export function AddTransactionSheet({
                         />
                     )}
                     
-                    <div className="grid gap-2">
-                        <Label htmlFor="date">Fecha</Label>
-                        <Input id="date" name="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required/>
-                    </div>
+                    {/* DETAILS SECTION */}
+                    <div className="space-y-4 p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05]">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Detalles</h3>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
+                                <CalendarIcon className="h-5 w-5 text-blue-400" />
+                            </div>
+                            <div className="flex-1">
+                                <Input 
+                                    id="date" 
+                                    name="date" 
+                                    type="date" 
+                                    value={date} 
+                                    onChange={(e) => setDate(e.target.value)} 
+                                    required
+                                    className="bg-transparent border-none text-white focus-visible:ring-1 focus-visible:ring-white/20 h-10 px-2"
+                                />
+                            </div>
+                        </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="description">Descripción</Label>
-                        <Textarea id="description" name="description" placeholder="Opcional (ej: Compras semanales)" value={description} onChange={e => setDescription(e.target.value)} />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                        <Label htmlFor="receipt">Recibo</Label>
-                        <label htmlFor="receipt-input" className="flex items-center gap-2 h-10 px-4 py-2 rounded-md border border-input bg-background text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors">
-                            <Receipt className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{receiptFile ? receiptFile.name : (receiptPreview ? 'Recibo adjunto' : 'Subir Imagen')}</span>
-                        </label>
-                        <input
-                            id="receipt-input"
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={handleReceiptChange}
-                        />
+                        <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0 border border-purple-500/20 mt-1">
+                                <AlignLeft className="h-5 w-5 text-purple-400" />
+                            </div>
+                            <div className="flex-1">
+                                <Textarea 
+                                    id="description" 
+                                    name="description" 
+                                    placeholder="Agrega una nota..." 
+                                    value={description} 
+                                    onChange={e => setDescription(e.target.value)}
+                                    className="bg-transparent border-none text-white placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-white/20 min-h-[60px] resize-none px-2 py-2"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                                <Receipt className="h-5 w-5 text-emerald-400" />
+                            </div>
+                            <div className="flex-1 relative overflow-hidden">
+                                <label htmlFor="receipt-input" className="flex items-center justify-between w-full h-10 px-2 rounded-md bg-transparent text-sm cursor-pointer hover:bg-white/5 transition-colors text-slate-300">
+                                    <span className="truncate">{receiptFile ? receiptFile.name : (receiptPreview ? 'Recibo adjunto' : 'Adjuntar comprobante')}</span>
+                                    <Upload className="h-4 w-4 text-slate-500 shrink-0" />
+                                </label>
+                                <input id="receipt-input" type="file" accept="image/*" className="sr-only" onChange={handleReceiptChange} />
+                            </div>
+                        </div>
+                        
                         {receiptPreview && (
-                            <img
-                                src={receiptPreview}
-                                alt="Vista previa del recibo"
-                                className="mt-1 rounded-md border border-border max-h-32 object-contain w-full"
-                            />
+                            <div className="pl-14 pr-2">
+                                <img src={receiptPreview} alt="Vista previa del recibo" className="rounded-xl border border-white/10 max-h-32 object-cover w-full opacity-80 hover:opacity-100 transition-opacity" />
+                            </div>
                         )}
                         {uploadProgress !== null && (
-                            <div className="mt-1 space-y-1">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Subiendo recibo...</span>
+                            <div className="pl-14 pr-2 space-y-1.5 mt-2">
+                                <div className="flex justify-between text-xs text-emerald-400">
+                                    <span>Subiendo...</span>
                                     <span>{uploadProgress}%</span>
                                 </div>
-                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary transition-all duration-300"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    />
+                                <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden border border-white/5">
+                                    <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style={{ width: `${uploadProgress}%` }} />
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="space-y-4 pt-4">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="recurring-expense">Transacción Recurrente</Label>
-                            <Switch id="recurring-expense" checked={isRecurring} onCheckedChange={setIsRecurring} />
+                    {/* ADVANCED SECTION */}
+                    <div className="space-y-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" /> Opciones Avanzadas
+                        </h3>
+
+                        <div className="flex items-center justify-between group">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20 group-hover:scale-110 transition-transform">
+                                    <RefreshCw className="h-4 w-4 text-orange-400" />
+                                </div>
+                                <Label htmlFor="recurring-expense" className="text-slate-300 cursor-pointer">Gasto Recurrente</Label>
+                            </div>
+                            <Switch id="recurring-expense" checked={isRecurring} onCheckedChange={setIsRecurring} className="data-[state=checked]:bg-orange-500" />
                         </div>
+
                         {isRecurring && (
-                            <select name="frequency" defaultValue={transactionToEdit?.frequency || "monthly"} className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                <option value="daily">Diaria</option>
-                                <option value="weekly">Semanal</option>
-                                <option value="bi-weekly">Quincenal</option>
-                                <option value="monthly">Mensual</option>
-                                <option value="yearly">Anual</option>
-                            </select>
+                            <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                                <Select name="frequency" defaultValue={transactionToEdit?.frequency || "monthly"}>
+                                    <SelectTrigger className="bg-black/20 border-white/10 text-slate-300 h-9 w-full">
+                                        <SelectValue placeholder="Seleccionar frecuencia" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#111827] border-white/10 text-white">
+                                        <SelectItem value="daily">Diaria</SelectItem>
+                                        <SelectItem value="weekly">Semanal</SelectItem>
+                                        <SelectItem value="bi-weekly">Quincenal</SelectItem>
+                                        <SelectItem value="monthly">Mensual</SelectItem>
+                                        <SelectItem value="yearly">Anual</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         )}
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="shared-expense">Gasto Compartido</Label>
-                            <Switch id="shared-expense" name="isShared" checked={isShared} onCheckedChange={setIsShared} />
+
+                        <div className="flex items-center justify-between group pt-2 border-t border-white/5 mt-2">
+                            <div className="flex items-center gap-3 pt-2">
+                                <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+                                    <Users className="h-4 w-4 text-cyan-400" />
+                                </div>
+                                <Label htmlFor="shared-expense" className="text-slate-300 cursor-pointer">Gasto Compartido</Label>
+                            </div>
+                            <Switch id="shared-expense" name="isShared" checked={isShared} onCheckedChange={setIsShared} className="data-[state=checked]:bg-cyan-500" />
                         </div>
+
                         {isShared && (
-                            <div className="space-y-2 rounded-md border p-4">
-                                <p className="text-sm font-medium">Compartir con:</p>
-                                {members.map(member => (
-                                    <div key={member.id} className="flex items-center space-x-2">
-                                        <Checkbox id={`user-${member.id}`} name={`user-${member.id}`} defaultChecked={transactionToEdit?.sharedWith?.includes(member.id)} />
-                                        <Label htmlFor={`user-${member.id}`} className="font-normal">{member.name}</Label>
-                                    </div>
-                                ))}
+                            <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div className="space-y-3 rounded-xl bg-black/20 border border-white/5 p-3">
+                                    <p className="text-xs text-slate-400 mb-1">Dividir con:</p>
+                                    {members.map(member => (
+                                        <div key={member.id} className="flex items-center space-x-3 bg-white/5 p-2 rounded-lg border border-white/5 hover:border-cyan-500/30 transition-colors">
+                                            <Checkbox id={`user-${member.id}`} name={`user-${member.id}`} defaultChecked={transactionToEdit?.sharedWith?.includes(member.id)} className="data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 border-white/20" />
+                                            <Label htmlFor={`user-${member.id}`} className="font-medium text-slate-200 cursor-pointer flex-1">{member.name}</Label>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
+                    
+                    {/* Padding for bottom to avoid being hidden by footer on mobile */}
+                    <div className="h-8"></div>
                 </div>
             </form>
-             <SheetFooter>
+            <SheetFooter className="p-4 border-t border-white/10 bg-[#111827]/90 backdrop-blur-xl sm:justify-between items-center z-20 sticky bottom-0">
                 <SheetClose asChild>
-                    <Button variant="outline" type="button">Cancelar</Button>
+                    <Button variant="ghost" type="button" className="text-slate-400 hover:text-white hover:bg-white/5 px-6">Cancelar</Button>
                 </SheetClose>
-                <Button type="submit" form="transaction-form" disabled={isSubmitting || uploadProgress !== null}>
-                    {(isSubmitting || uploadProgress !== null) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {uploadProgress !== null ? `Subiendo (${uploadProgress}%)` : 'Guardar'}
+                <Button 
+                    type="submit" 
+                    form="transaction-form" 
+                    disabled={isSubmitting || uploadProgress !== null}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 font-semibold shadow-lg shadow-primary/20 transition-all active:scale-95"
+                >
+                    {(isSubmitting || uploadProgress !== null) ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {uploadProgress !== null ? `Subiendo (${uploadProgress}%)` : 'Guardando...'}
+                        </>
+                    ) : (
+                        isEditing ? 'Guardar Cambios' : 'Añadir Transacción'
+                    )}
                 </Button>
             </SheetFooter>
         </SheetContent>

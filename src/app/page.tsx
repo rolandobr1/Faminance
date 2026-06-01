@@ -34,9 +34,16 @@ export default function WelcomePage() {
 
   if (loading || currentUser) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#07090e] p-4 relative overflow-hidden">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#07090e] p-4 relative overflow-hidden text-white z-50">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/20 rounded-full blur-[120px]" />
-            <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10" />
+            <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10 mb-4" />
+            <div className="relative z-10 font-mono text-sm space-y-2 bg-black/50 p-4 rounded-lg">
+                <p>Status: {loading ? "Loading..." : "Loaded"}</p>
+                <p>Loading State: {loading.toString()}</p>
+                <p>Has User: {(!!currentUser).toString()}</p>
+                {currentUser && <p>User ID: {currentUser.id}</p>}
+                <p>Check browser console (F12) for more errors.</p>
+            </div>
         </div>
     );
   }

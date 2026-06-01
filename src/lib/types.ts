@@ -32,6 +32,7 @@ export type Category = FirestoreDocument & {
   icon: string;
   type: 'income' | 'expense';
   isActive: boolean;
+  parentId?: string;
 };
 
 export type Budget = FirestoreDocument & {

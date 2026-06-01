@@ -62,54 +62,116 @@ function CategoryList({
     onDelete: (categoryId: string) => void;
     onToggle: (category: Category, isActive: boolean) => void;
 }) {
+    // Group categories
+    const rootCategories = categories.filter(c => !c.parentId);
+
     return (
         <div>
-            <h3 className="text-lg font-medium font-headline mb-2">{title}</h3>
-            <div className="space-y-4">
-                {categories.map(category => {
-                    const Icon = iconMap[category.icon];
+            <h3 className="text-lg font-medium font-headline mb-4">{title}</h3>
+            <div className="space-y-6">
+                {rootCategories.map(rootCategory => {
+                    const subCategories = categories.filter(c => c.parentId === rootCategory.value);
+                    const RootIcon = iconMap[rootCategory.icon];
+                    
                     return (
-                        <div key={category.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-                                <p className="font-medium">{category.label}</p>
+                        <div key={rootCategory.id} className="space-y-3">
+                            {/* Root Category */}
+                            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-background rounded-lg p-2 shadow-sm border border-border/50">
+                                        {RootIcon && <RootIcon className="h-5 w-5 text-primary" />}
+                                    </div>
+                                    <p className="font-semibold text-foreground">{rootCategory.label}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={rootCategory.isActive}
+                                        onCheckedChange={(checked) => onToggle(rootCategory, checked)}
+                                        aria-label={`Toggle category ${rootCategory.label}`}
+                                    />
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onSelect={() => onEdit(rootCategory)}>Editar</DropdownMenuItem>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>Eliminar</DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría "{rootCategory.label}".
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(rootCategory.id)}>Eliminar</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Switch
-                                    checked={category.isActive}
-                                    onCheckedChange={(checked) => onToggle(category, checked)}
-                                    aria-label={`Toggle category ${category.label}`}
-                                />
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onSelect={() => onEdit(category)}>Editar</DropdownMenuItem>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>Eliminar</DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría "{category.label}".
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(category.id)}>Eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
+
+                            {/* Subcategories */}
+                            {subCategories.length > 0 && (
+                                <div className="pl-6 md:pl-10 space-y-2 relative before:absolute before:left-4 md:before:left-8 before:top-0 before:bottom-4 before:w-px before:bg-border">
+                                    {subCategories.map(sub => {
+                                        const SubIcon = iconMap[sub.icon];
+                                        return (
+                                            <div key={sub.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors relative group">
+                                                <div className="absolute left-[-20px] md:left-[-32px] top-1/2 w-4 md:w-6 h-px bg-border" />
+                                                <div className="flex items-center gap-3">
+                                                    {SubIcon && <SubIcon className="h-4 w-4 text-muted-foreground" />}
+                                                    <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{sub.label}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch
+                                                        checked={sub.isActive}
+                                                        onCheckedChange={(checked) => onToggle(sub, checked)}
+                                                        className="scale-90"
+                                                    />
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem onSelect={() => onEdit(sub)}>Editar</DropdownMenuItem>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>Eliminar</DropdownMenuItem>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Eliminará la subcategoría "{sub.label}".
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDelete(sub.id)}>Eliminar</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                    )
+                    );
                 })}
             </div>
         </div>
@@ -198,23 +260,34 @@ export default function SettingsPage() {
     };
 
 
-    const handleCategorySubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleCategorySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const categoryData: Omit<Category, 'id' | 'familyId' | 'value'> = {
+        const parentId = formData.get('parentId') as string;
+        
+        const categoryData: any = {
             label: formData.get('label') as string,
             icon: formData.get('icon') as string,
             type: formData.get('type') as 'income' | 'expense',
             isActive: editingCategory ? editingCategory.isActive : true, // Preserve status on edit, default to active on create
         };
 
-        if (editingCategory) {
-            updateCategory(editingCategory.id, categoryData);
-        } else {
-            addCategory(categoryData);
+        if (parentId && parentId !== 'none') {
+            categoryData.parentId = parentId;
         }
-        setEditingCategory(null);
-        setCategoryDialogOpen(false);
+
+        try {
+            if (editingCategory) {
+                await updateCategory(editingCategory.id, categoryData);
+            } else {
+                await addCategory(categoryData);
+            }
+            setEditingCategory(null);
+            setCategoryDialogOpen(false);
+        } catch (error: any) {
+            console.error("Error saving category:", error);
+            alert("Error al guardar categoría: " + (error?.message || "Permisos insuficientes."));
+        }
     };
 
     const handleToggleCategory = (category: Category, isActive: boolean) => {
@@ -392,13 +465,33 @@ export default function SettingsPage() {
                         <Label htmlFor="type" className="text-right">
                         Tipo
                         </Label>
-                        <Select name="type" defaultValue={editingCategory?.type || 'expense'}>
+                        <Select name="type" defaultValue={editingCategory?.type || 'expense'} onValueChange={(v) => {
+                            // We don't have a state for type, so we can't easily filter parents based on type dynamically in a simple form.
+                            // But for simplicity, we will let them select any parent or we could add state.
+                        }}>
                             <SelectTrigger className="col-span-3">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="expense">Egreso</SelectItem>
                                 <SelectItem value="income">Ingreso</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="parentId" className="text-right">
+                        Categoría Padre
+                        </Label>
+                        <Select name="parentId" defaultValue={editingCategory?.parentId || 'none'}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Principal (Ninguna)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">-- Principal (Ninguna) --</SelectItem>
+                                {categories.filter(c => !c.parentId && c.id !== editingCategory?.id).map(c => (
+                                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
