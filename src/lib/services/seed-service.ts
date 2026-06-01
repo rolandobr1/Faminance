@@ -1,9 +1,10 @@
 import { collection, getDocs, writeBatch, query, where, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { getFirestoreDb } from '@/lib/firebase/config';
 import { defaultCategories } from '@/lib/data';
 import type { Category } from '@/lib/types';
 
 export async function seedDefaultCategories(familyId: string) {
+    const db = getFirestoreDb();
     const categoriesRef = collection(db, 'categories');
     const q = query(categoriesRef, where("familyId", "==", familyId));
     const snapshot = await getDocs(q);

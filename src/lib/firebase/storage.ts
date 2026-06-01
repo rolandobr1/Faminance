@@ -1,7 +1,7 @@
 'use client';
 
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from './config';
+import { getFirebaseStorage } from './config';
 
 /**
  * Uploads a receipt image to Firebase Storage.
@@ -17,6 +17,7 @@ export async function uploadReceipt(
 ): Promise<string> {
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `receipts/${transactionId}.${ext}`;
+  const storage = getFirebaseStorage();
   const storageRef = ref(storage, path);
   const uploadTask = uploadBytesResumable(storageRef, file);
 

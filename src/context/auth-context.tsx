@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { users } from '@/lib/data';
-import { auth, db } from '@/lib/firebase/config';
+import { getFirebaseAuth } from '@/lib/firebase/config';
 import { onAuthStateChanged, signInAnonymously, type User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       console.log("[AuthContext] Starting auth initialization...");
       setLoading(true);
+      const auth = getFirebaseAuth();
       
       const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
         console.log("[AuthContext] onAuthStateChanged callback fired. fbUser:", fbUser);

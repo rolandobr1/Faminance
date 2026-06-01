@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { db } from '@/lib/firebase/config';
+import { getFirestoreDb } from '@/lib/firebase/config';
 import { collection, addDoc as fbAddDoc, updateDoc as fbUpdateDoc, deleteDoc as fbDeleteDoc, doc, getDocs, query, where, Timestamp, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { useAuth } from './auth-context';
 import type { FamilyData, Transaction, Category, Budget, SavingsGoal, Account, CreditCard, Loan, User } from '@/lib/types';
@@ -91,6 +91,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     recurringCheckHasRun.current = false;
+    const db = getFirestoreDb();
 
     // Seed categories as a side-effect, don't block loading
     seedDefaultCategories(FAMILY_ID).catch(error => {
@@ -118,9 +119,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     ) => {
         console.log(`[FamilyDataContext] Registering onSnapshot for: ${collectionName}`);
         let q = query(collection(db, collectionName), where("familyId", "==", FAMILY_ID));
-        if (collectionName === 'transactions') {
-            q = query(q, orderBy("date", "desc"));
-        }
+        const shouldSortClientSide = collectionName === 'transactions';
         
         return onSnapshot(q, (snapshot) => {
             console.log(`[FamilyDataContext] onSnapshot received data for: ${collectionName}, doc count:`, snapshot.size);
@@ -133,6 +132,14 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
                 });
                 return { id: d.id, ...data };
             }) as T[];
+
+            if (shouldSortClientSide) {
+                docs = docs.sort((a, b) => {
+                    const aDate = new Date((a as any).date).getTime();
+                    const bDate = new Date((b as any).date).getTime();
+                    return bDate - aDate;
+                });
+            }
             
             if (processor) {
                 docs = processor(docs);
@@ -196,16 +203,19 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
         dataToAdd.user = currentUser.name;
     }
 
+    const db = getFirestoreDb();
     const docRef = await fbAddDoc(collection(db, collectionName), dataToAdd);
     return docRef;
   }, [currentUser]);
 
   const updateDocById = useCallback(async (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string, data: any) => {
+    const db = getFirestoreDb();
     const docRef = doc(db, collectionName, id);
     await fbUpdateDoc(docRef, data);
   }, []);
   
   const deleteDocById = useCallback(async (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string) => {
+    const db = getFirestoreDb();
     const docRef = doc(db, collectionName, id);
     await fbDeleteDoc(docRef);
   }, []);
@@ -317,14 +327,17 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
   }), [transactions, categories, budgets, goals, accounts, creditCardsState, loansState]);
 
   const addMember = useCallback(async (member: Omit<User, 'id'>) => {
+    const db = getFirestoreDb();
     return fbAddDoc(collection(db, MEMBERS_COLLECTION), { ...member, familyId: FAMILY_ID });
   }, []);
 
   const updateMember = useCallback(async (id: string, data: Partial<User>) => {
+    const db = getFirestoreDb();
     await fbUpdateDoc(doc(db, MEMBERS_COLLECTION, id), data);
   }, []);
 
   const deleteMember = useCallback(async (id: string) => {
+    const db = getFirestoreDb();
     await fbDeleteDoc(doc(db, MEMBERS_COLLECTION, id));
   }, []);
 

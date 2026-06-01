@@ -5,6 +5,8 @@ export type FirestoreDocument = {
   familyId: string; // To support multi-tenancy
 }
 
+export type RecurringFrequency = 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
+
 export type Transaction = FirestoreDocument & {
   date: string;
   description?: string;
@@ -20,7 +22,7 @@ export type Transaction = FirestoreDocument & {
   isShared: boolean;
   sharedWith: string[];
   isRecurring?: boolean;
-  frequency?: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
+  frequency?: RecurringFrequency;
   nextDueDate?: string; // New field for recurring transactions
   budgetId?: string;
   loanId?: string;
@@ -51,6 +53,10 @@ export type SavingsGoal = FirestoreDocument & {
   priority: 'Alta' | 'Media' | 'Baja';
   accountId?: string;
   icon?: string;
+  isRecurring?: boolean;
+  frequency?: RecurringFrequency;
+  contributionAmount?: number;
+  nextContributionDate?: string;
 };
 
 export type User = {

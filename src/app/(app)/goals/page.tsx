@@ -8,6 +8,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState, useEffect } from "react";
 import type { SavingsGoal, Account } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,16 @@ function GoalForm({
   isSubmitting: boolean;
 }) {
   const savingsAccounts = accounts.filter(acc => acc.type === 'ahorro');
+  const [isRecurring, setIsRecurring] = useState(goal?.isRecurring || false);
+  const [frequency, setFrequency] = useState<SavingsGoal['frequency']>(goal?.frequency || 'monthly');
+  const [contributionAmount, setContributionAmount] = useState<number | undefined>(goal?.contributionAmount);
   
+  useEffect(() => {
+    setIsRecurring(goal?.isRecurring || false);
+    setFrequency(goal?.frequency || 'monthly');
+    setContributionAmount(goal?.contributionAmount);
+  }, [goal]);
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -71,6 +81,9 @@ function GoalForm({
       priority: formData.get('priority') as 'Alta' | 'Media' | 'Baja',
       accountId: formData.get('accountId') as string,
       icon: formData.get('icon') as string || 'Target',
+      isRecurring,
+      ...(isRecurring && { frequency }),
+      ...(isRecurring && contributionAmount !== undefined ? { contributionAmount } : {}),
     };
     onSave(newGoal, currentAmount);
   };
@@ -146,6 +159,44 @@ function GoalForm({
             </SelectContent>
         </Select>
       </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="isRecurring" className="text-right">Ahorro recurrente</Label>
+        <div className="col-span-3 flex items-center gap-3">
+          <Switch id="isRecurring" checked={isRecurring} onCheckedChange={setIsRecurring} />
+          <span className="text-sm text-muted-foreground">Activar aportes automáticos</span>
+        </div>
+      </div>
+      {isRecurring && (
+        <>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="contributionAmount" className="text-right">Aporte</Label>
+            <Input
+              id="contributionAmount"
+              name="contributionAmount"
+              type="number"
+              value={contributionAmount ?? ''}
+              onChange={(event) => setContributionAmount(event.target.value ? Number(event.target.value) : undefined)}
+              placeholder="Monto por periodo"
+              className="col-span-3"
+              min={0}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="frequency" className="text-right">Frecuencia</Label>
+            <Select name="frequency" value={frequency} onValueChange={(value) => setFrequency(value as SavingsGoal['frequency'])}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="bi-weekly">Quincenal</SelectItem>
+                    <SelectItem value="monthly">Mensual</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
       <DialogFooter>
         <DialogClose asChild>
           <Button type="button" variant="outline">Cancelar</Button>
@@ -202,6 +253,11 @@ function GoalCard({ goal, account, onEdit }: { goal: SavingsGoal, account?: Acco
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                                 <Landmark className="h-3 w-3" />
                                 <span>{account.name}</span>
+                            </div>
+                        )}
+                        {goal.isRecurring && goal.contributionAmount && goal.frequency && (
+                            <div className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                                Ahorro recurrente: {goal.frequency === 'bi-weekly' ? 'Quincenal' : goal.frequency === 'yearly' ? 'Anual' : goal.frequency === 'monthly' ? 'Mensual' : goal.frequency === 'weekly' ? 'Semanal' : 'Diaria'} · {goal.contributionAmount.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
                             </div>
                         )}
                     </div>
