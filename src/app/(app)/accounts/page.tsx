@@ -3,8 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import { Banknote, CreditCard as CreditCardIcon, DollarSign, PlusCircle, MoreHorizontal, ArrowRightLeft, HandCoins, TrendingDown, X, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn, getProgressColor } from "@/lib/utils";
+import { Banknote, CreditCard as CreditCardIcon, DollarSign, PlusCircle, MoreHorizontal, ArrowRightLeft, HandCoins, TrendingDown, X, ChevronRight, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import {
   Sheet,
@@ -45,8 +48,23 @@ import { TransferForm } from "@/components/faminance/accounts/transfer-form";
 import { Header } from "@/components/faminance/header";
 import { useAccountsPage } from "./use-accounts-page";
 import { useFamilyData } from "@/context/family-data-context";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { CreditCard } from "@/lib/types";
+
+const getDaysUntilCutoff = (cutoffDate: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    let nextCutoff = new Date(currentYear, currentMonth, cutoffDate);
+    if (today.getDate() > cutoffDate) {
+        nextCutoff = new Date(currentYear, currentMonth + 1, cutoffDate);
+    }
+    
+    const diffTime = nextCutoff.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
 export default function AccountsPage() {
     const {
@@ -71,6 +89,10 @@ export default function AccountsPage() {
         deleteAccount,
         deleteCreditCard,
         getAccountBalance,
+        categories,
+        isCashEditOpen,
+        setCashEditOpen,
+        handleCashAdjustment,
     } = useAccountsPage();
 
     const { transactions } = useFamilyData();
@@ -83,11 +105,12 @@ export default function AccountsPage() {
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [selectedCardDetail, transactions]);
 
-    const getProgressColor = (progress: number) => {
-        if (progress > 85) return "bg-destructive";
-        if (progress > 60) return "bg-accent";
-        return "bg-primary";
-    }
+
+    useEffect(() => {
+        const handleOpenModal = () => setCreateOpen(true);
+        document.addEventListener('open-add-account', handleOpenModal);
+        return () => document.removeEventListener('open-add-account', handleOpenModal);
+    }, [setCreateOpen]);
 
     return (
         <>
@@ -150,6 +173,19 @@ export default function AccountsPage() {
                                             <div>
                                                 <p className="font-medium font-headline">{account.name}</p>
                                                 <p className="text-sm text-muted-foreground">{account.bank} - <span className="capitalize">{account.type}</span></p>
+                                                {account.isRecurringDeposit && account.depositAmount && (
+                                                    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-primary/80 font-medium bg-primary/10 w-fit px-2 py-0.5 rounded-full">
+                                                        <RefreshCw className="h-3 w-3" />
+                                                        <span>
+                                                            Aporte {
+                                                                account.depositFrequency === 'daily' ? 'diario' :
+                                                                account.depositFrequency === 'weekly' ? 'semanal' :
+                                                                account.depositFrequency === 'bi-weekly' ? 'quincenal' :
+                                                                account.depositFrequency === 'yearly' ? 'anual' : 'mensual'
+                                                            }: {account.depositAmount.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -200,14 +236,53 @@ export default function AccountsPage() {
                         </CardContent>
                     </Card>
                     <Card className="h-fit">
-                        <CardHeader>
-                            <CardTitle className="font-headline flex items-center gap-2">
-                                <HandCoins className="text-primary" />
-                                Efectivo en Mano
-                            </CardTitle>
-                            <CardDescription>
-                                Su balance de efectivo disponible.
-                            </CardDescription>
+                        <CardHeader className="flex flex-row items-start justify-between pb-2">
+                            <div className="space-y-1">
+                                <CardTitle className="font-headline flex items-center gap-2">
+                                    <HandCoins className="text-primary" />
+                                    Efectivo en Mano
+                                </CardTitle>
+                                <CardDescription>
+                                    Su balance de efectivo disponible.
+                                </CardDescription>
+                            </div>
+                            <Dialog open={isCashEditOpen} onOpenChange={setCashEditOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Ajustar Efectivo en Mano</DialogTitle>
+                                        <DialogDescription>
+                                            Establece un monto inicial o corrige el balance actual.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        const amount = Number(formData.get('amount'));
+                                        if (!isNaN(amount)) {
+                                            handleCashAdjustment(amount);
+                                        }
+                                    }}>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="amount">Nuevo Balance de Efectivo (DOP)</Label>
+                                                <Input id="amount" name="amount" type="number" step="0.01" defaultValue={cashBalance} required />
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    Esto ajustará tu balance base silenciosamente para que coincida con este monto, sin afectar tus reportes de ingresos o gastos. Para reiniciar tu cuenta a cero, ingresa 0.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setCashEditOpen(false)}>Cancelar</Button>
+                                            <Button type="submit" disabled={isSubmitting}>Guardar Ajuste</Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold text-center py-4">
@@ -248,7 +323,14 @@ export default function AccountsPage() {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <span className="font-medium font-headline">{card.name} ({card.bank})</span>
-                                                <p className="text-sm text-muted-foreground">**** {card.last4}</p>
+                                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                    <span className="text-xs text-muted-foreground">**** {card.last4}</span>
+                                                    {card.cutoffDate && (
+                                                        <span className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                                            Corte en {getDaysUntilCutoff(card.cutoffDate)} {getDaysUntilCutoff(card.cutoffDate) === 1 ? 'día' : 'días'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -352,7 +434,7 @@ export default function AccountsPage() {
                         </TabsList>
                     )}
                     <TabsContent value="account">
-                        <AccountForm account={editingAccount} onSave={handleSaveAccount} onClose={() => { setCreateOpen(false); setEditingAccount(undefined); }} isSubmitting={isSubmitting} />
+                        <AccountForm account={editingAccount} accounts={accounts} categories={categories} onSave={handleSaveAccount} onClose={() => { setCreateOpen(false); setEditingAccount(undefined); }} isSubmitting={isSubmitting} />
                     </TabsContent>
                     <TabsContent value="card">
                         <CreditCardForm card={editingCard} onSave={handleSaveCreditCard} onClose={() => { setCreateOpen(false); setEditingCard(undefined); }} isSubmitting={isSubmitting} />
@@ -379,17 +461,17 @@ export default function AccountsPage() {
                     {selectedCardDetail && (
                         <div className="grid grid-cols-2 gap-3 mt-4">
                             {(selectedCardDetail.limitDOP > 0 || selectedCardDetail.spentDOP > 0) && (
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                                    <p className="text-xs text-slate-400 mb-1">Gastado DOP</p>
+                                <div className="bg-muted/50 rounded-xl p-3 border border-border">
+                                    <p className="text-xs text-muted-foreground mb-1">Gastado DOP</p>
                                     <p className="font-bold text-red-400">{selectedCardDetail.spentDOP.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}</p>
-                                    <p className="text-xs text-slate-500">de {selectedCardDetail.limitDOP.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}</p>
+                                    <p className="text-xs text-muted-foreground">de {selectedCardDetail.limitDOP.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}</p>
                                 </div>
                             )}
                             {(selectedCardDetail.limitUSD > 0 || selectedCardDetail.spentUSD > 0) && (
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                                    <p className="text-xs text-slate-400 mb-1">Gastado USD</p>
+                                <div className="bg-muted/50 rounded-xl p-3 border border-border">
+                                    <p className="text-xs text-muted-foreground mb-1">Gastado USD</p>
                                     <p className="font-bold text-red-400">{selectedCardDetail.spentUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                                    <p className="text-xs text-slate-500">de {selectedCardDetail.limitUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                                    <p className="text-xs text-muted-foreground">de {selectedCardDetail.limitUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
                                 </div>
                             )}
                         </div>

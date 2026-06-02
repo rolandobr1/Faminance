@@ -16,11 +16,14 @@ import {
 import React, { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/auth-context';
+import { useFamilyData } from '@/context/family-data-context';
+import { useIsClient } from '@/hooks/use-is-client';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserNav } from '@/components/faminance/user-nav';
+import { MobileAddButton } from '@/components/faminance/transactions/mobile-add-button';
 
 // NavLink for Sidebar with expansion label display
 function NavLink({ href, icon: Icon, label, isActive }: { href: string, icon: React.ComponentType<{className?: string}>, label: string, isActive: boolean }) {
@@ -58,76 +61,54 @@ function MobileNavLink({ href, icon: Icon, label, isActive }: { href: string, ic
                 <span className="absolute top-0 w-8 h-1 bg-primary rounded-full" />
             )}
             <Icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} />
-            <span className={cn(isActive && "font-bold text-slate-200")}>{label}</span>
+            <span className={cn(isActive && "font-bold text-foreground")}>{label}</span>
         </Link>
     );
 }
 
-// Mobile "More" menu
-function MoreNav({ items, isActive }: { items: { href: string, icon: React.ComponentType<{className?: string}>, label: string }[], isActive: boolean }) {
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className={cn(
-                    'flex flex-col items-center justify-center gap-1 p-1 text-center font-medium text-muted-foreground relative',
-                    'text-[10px] w-full break-words',
-                    isActive && 'text-primary'
-                )}>
-                    {isActive && (
-                        <span className="absolute top-0 w-8 h-1 bg-primary rounded-full" />
-                    )}
-                    <MoreHorizontal className="h-5 w-5" />
-                    <span>Más</span>
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 mb-2" align="end">
-                {items.map(item => (
-                    <DropdownMenuItem key={item.label} asChild>
-                        <Link href={item.href}>
-                            <item.icon className="mr-2 h-4 w-4" />
-                            <span>{item.label}</span>
-                        </Link>
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
+// Removed MoreNav
 
+
+const MAIN_NAV_ITEMS = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
+  { href: '/transactions', icon: ArrowRightLeft, label: 'Transacciones' },
+  { href: '/accounts', icon: CreditCard, label: 'Cuentas' },
+  { href: '/budgets', icon: PiggyBank, label: 'Presupuestos' },
+];
+
+const MORE_NAV_ITEMS = [
+    { href: '/goals', icon: Target, label: 'Metas' },
+    { href: '/debts', icon: Banknote, label: 'Deudas' },
+    { href: '/settings', icon: Settings, label: 'Ajustes' },
+];
+
+const ALL_NAV_ITEMS = [...MAIN_NAV_ITEMS, ...MORE_NAV_ITEMS];
+const ALL_AVAILABLE_ITEMS = ALL_NAV_ITEMS;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { currentUser, loading: authLoading } = useAuth();
-  const [isClient, setIsClient] = useState(false);
+  const { currentUser } = useAuth();
+  const isClient = useIsClient();
   const pathname = usePathname();
 
-  const mainNavItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
-    { href: '/transactions', icon: ArrowRightLeft, label: 'Transacciones' },
-    { href: '/accounts', icon: CreditCard, label: 'Cuentas' },
-    { href: '/budgets', icon: PiggyBank, label: 'Presupuestos' },
-  ];
+  const { members } = useFamilyData();
 
-  const moreNavItems = [
-      { href: '/goals', icon: Target, label: 'Metas' },
-      { href: '/debts', icon: Banknote, label: 'Deudas' },
-      { href: '/settings', icon: Settings, label: 'Ajustes' },
-  ];
+  const userDoc = members.find(m => m.id === currentUser?.id);
+  const showBottomNav = userDoc?.showBottomNav ?? true;
+  const bottomNavItemsKeys = userDoc?.bottomNavItems || ['/dashboard', '/transactions', '/accounts', '/budgets'];
 
-  const allNavItems = [...mainNavItems, ...moreNavItems];
+  const selectedBottomItems = bottomNavItemsKeys.map(key => ALL_AVAILABLE_ITEMS.find(i => i.href === key)).filter(Boolean) as typeof ALL_AVAILABLE_ITEMS;
+  const mobileLeftItems = selectedBottomItems.slice(0, 2);
+  const mobileRightItems = selectedBottomItems.slice(2, 4);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient && !authLoading && !currentUser) {
+    if (isClient && !currentUser) {
         router.replace('/');
     }
-  }, [currentUser, authLoading, router, isClient]);
+  }, [currentUser, router, isClient]);
   
 
-  if (!isClient || authLoading || !currentUser) {
+  if (!isClient || !currentUser) {
     return (
         <div className="flex min-h-screen w-full flex-col items-center justify-center bg-[#07090e]">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -137,9 +118,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-    <div className="flex min-h-screen w-full flex-col bg-background">
+    <div className="flex min-h-screen w-full flex-col bg-transparent">
         {/* Expandable Hover Sidebar */}
-        <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 hover:w-48 transition-all duration-300 ease-in-out flex-col border-r bg-card sm:flex group/sidebar hover:shadow-2xl hover:shadow-primary/5">
+        <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 hover:w-48 transition-all duration-300 ease-in-out flex-col border-r glass-card sm:flex group/sidebar">
         <nav className="flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">
             <Link
             href="/dashboard"
@@ -148,7 +129,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <PiggyBank className="h-5 w-5" />
             <span className="sr-only">Faminance</span>
             </Link>
-            {allNavItems.map((item) => (
+            {ALL_NAV_ITEMS.map((item) => (
                 <NavLink 
                     key={item.href} 
                     href={item.href} 
@@ -171,24 +152,44 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </main>
         </div>
         
-        {/* Mobile Navigation */}
-        <footer className="fixed inset-x-0 bottom-0 z-10 border-t bg-card sm:hidden">
-            <div className="grid grid-cols-5 h-20 pb-4">
-                {mainNavItems.map((item) => (
-                    <MobileNavLink 
-                        key={item.href} 
-                        href={item.href} 
-                        icon={item.icon} 
-                        label={item.label}
-                        isActive={pathname.startsWith(item.href)}
-                    />
-                ))}
-                <MoreNav 
-                    items={moreNavItems} 
-                    isActive={moreNavItems.some(item => pathname.startsWith(item.href))}
-                />
-            </div>
-        </footer>
+        {/* Mobile Navigation — center elevated + button */}
+        {showBottomNav && (
+            <footer className="fixed inset-x-0 bottom-0 z-30 sm:hidden" style={{ overflow: 'visible' }}>
+                <div className="relative">
+                    {/* Elevated glass + button */}
+                    <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-10">
+                        <MobileAddButton />
+                    </div>
+
+                    <div className="grid grid-cols-5 h-16 pb-3 glass-header rounded-t-2xl">
+                        {mobileLeftItems.map((item) => (
+                            <MobileNavLink
+                                key={item.href}
+                                href={item.href}
+                                icon={item.icon}
+                                label={item.label}
+                                isActive={pathname.startsWith(item.href)}
+                            />
+                        ))}
+
+                        {/* Center placeholder — space for the elevated button */}
+                        <div className="flex items-end justify-center pb-1">
+                            <span className="text-[9px] font-semibold text-primary/60 tracking-widest uppercase">Añadir</span>
+                        </div>
+
+                        {mobileRightItems.map((item) => (
+                            <MobileNavLink
+                                key={item.href}
+                                href={item.href}
+                                icon={item.icon}
+                                label={item.label}
+                                isActive={pathname.startsWith(item.href)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </footer>
+        )}
     </div>
     </TooltipProvider>
   );

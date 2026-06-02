@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Loan, Budget } from "@/lib/types";
-import { Banknote, CalendarDays, CreditCard as CreditCardIcon, Percent, PiggyBank, ReceiptText, PlusCircle, MoreHorizontal, Loader2 } from "lucide-react";
+import { Banknote, CalendarDays, CreditCard as CreditCardIcon, Percent, PiggyBank, ReceiptText, PlusCircle, MoreHorizontal, Loader2, Clock } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -78,25 +78,25 @@ function LoanForm({
 
     return (
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Nombre</Label>
-                <Input id="name" name="name" defaultValue={loan?.name} placeholder="Ej: Préstamo de vehículo" className="col-span-3" required />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                <Label htmlFor="name" className="text-left sm:text-right text-xs sm:text-sm">Nombre</Label>
+                <Input id="name" name="name" defaultValue={loan?.name} placeholder="Ej: Préstamo de vehículo" className="col-span-1 sm:col-span-3" required />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="totalAmount" className="text-right">Monto Total</Label>
-                <Input id="totalAmount" name="totalAmount" type="number" defaultValue={loan?.totalAmount} placeholder="RD$0.00" className="col-span-3" required />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                <Label htmlFor="totalAmount" className="text-left sm:text-right text-xs sm:text-sm">Monto Total</Label>
+                <Input id="totalAmount" name="totalAmount" type="number" defaultValue={loan?.totalAmount} placeholder="RD$0.00" className="col-span-1 sm:col-span-3" required />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="paidAmount" className="text-right">Monto Pagado</Label>
-                <Input id="paidAmount" name="paidAmount" type="number" defaultValue={loan?.paidAmount || 0} placeholder="RD$0.00" className="col-span-3" />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                <Label htmlFor="paidAmount" className="text-left sm:text-right text-xs sm:text-sm">Monto Pagado</Label>
+                <Input id="paidAmount" name="paidAmount" type="number" defaultValue={loan?.paidAmount || 0} placeholder="RD$0.00" className="col-span-1 sm:col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="monthlyPayment" className="text-right">Pago Mensual</Label>
-                <Input id="monthlyPayment" name="monthlyPayment" type="number" defaultValue={loan?.monthlyPayment} placeholder="RD$0.00" className="col-span-3" required />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                <Label htmlFor="monthlyPayment" className="text-left sm:text-right text-xs sm:text-sm">Pago Mensual</Label>
+                <Input id="monthlyPayment" name="monthlyPayment" type="number" defaultValue={loan?.monthlyPayment} placeholder="RD$0.00" className="col-span-1 sm:col-span-3" required />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="paymentDate" className="text-right">Día de Pago</Label>
-                <Input id="paymentDate" name="paymentDate" type="number" min="1" max="31" defaultValue={loan?.paymentDate} placeholder="Ej: 15" className="col-span-3" required />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                <Label htmlFor="paymentDate" className="text-left sm:text-right text-xs sm:text-sm">Día de Pago</Label>
+                <Input id="paymentDate" name="paymentDate" type="number" min="1" max="31" defaultValue={loan?.paymentDate} placeholder="Ej: 15" className="col-span-1 sm:col-span-3" required />
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -137,6 +137,12 @@ export default function DebtsPage() {
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    const handleOpen = () => setLoanDialogOpen(true);
+    document.addEventListener('open-add-debt', handleOpen);
+    return () => document.removeEventListener('open-add-debt', handleOpen);
   }, []);
 
   const handleSaveLoan = async (loanData: Omit<Loan, 'id' | 'familyId' | 'paidAmount'>, paidAmount?: number) => {
@@ -213,11 +219,23 @@ export default function DebtsPage() {
 
   const loanData = useMemo(() => loans.map(loan => {
     const progressPercentage = loan.totalAmount > 0 ? (loan.paidAmount / loan.totalAmount) * 100 : 0;
+    const remainingAmount = loan.totalAmount - loan.paidAmount;
+    let estimatedPayoffDate: string | null = null;
+    
+    if (remainingAmount > 0 && loan.monthlyPayment > 0) {
+        const remainingMonths = Math.ceil(remainingAmount / loan.monthlyPayment);
+        const today = new Date();
+        const payoffDate = new Date(today.getFullYear(), today.getMonth() + remainingMonths, loan.paymentDate || 15);
+        const monthName = payoffDate.toLocaleDateString('es-ES', { month: 'long' });
+        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        estimatedPayoffDate = `${capitalizedMonth} ${payoffDate.getFullYear()}`;
+    }
+
     const data = [
       { name: 'Pagado', value: loan.paidAmount, percentage: progressPercentage, fill: CHART_COLORS.primary },
-      { name: 'Restante', value: loan.totalAmount - loan.paidAmount, percentage: 100 - progressPercentage, fill: 'hsl(var(--muted))' }
+      { name: 'Restante', value: remainingAmount, percentage: 100 - progressPercentage, fill: 'hsl(var(--muted))' }
     ];
-    return { ...loan, progressPercentage, chartData: data };
+    return { ...loan, progressPercentage, chartData: data, estimatedPayoffDate };
   }), [loans]);
 
     useEffect(() => {
@@ -411,6 +429,12 @@ export default function DebtsPage() {
                             <CalendarDays className="h-4 w-4 text-primary" />
                             <span className="font-semibold">Día de pago: {loan.paymentDate} de cada mes</span>
                             </div>
+                            {loan.estimatedPayoffDate && (
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 mt-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Liquidación est.: {loan.estimatedPayoffDate}</span>
+                                </div>
+                            )}
                         </div>
                         </CardContent>
                     </Card>

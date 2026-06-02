@@ -53,6 +53,11 @@ export function SavingsOverview() {
             <div className="flex items-center gap-2">
                 <Target className="h-6 w-6 text-primary" />
                 <h2 className="text-xl font-headline font-semibold">Metas de Ahorro</h2>
+                {goals.length > 0 && (
+                    <span className="text-xs font-semibold text-muted-foreground bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
+                        {goals.length > 3 ? `3 de ${goals.length}` : `${goals.length}`}
+                    </span>
+                )}
             </div>
              <Button asChild variant="link" className="text-primary">
                 <Link href="/goals">

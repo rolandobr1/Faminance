@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import './globals.css';
 import { Providers } from './providers';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'Faminance',
@@ -31,10 +32,14 @@ export default function RootLayout({
       <body className={cn(
         "min-h-screen bg-background font-body antialiased",
       )}>
-        <Providers>
-          {children}
-        </Providers>
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <div className="min-h-screen w-full transition-colors duration-500 mesh-bg-light dark:mesh-bg-dark">
+            <Providers>
+              {children}
+            </Providers>
+            <Toaster />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

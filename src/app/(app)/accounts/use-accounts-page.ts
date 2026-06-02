@@ -8,9 +8,10 @@ import { AccountFormValues } from "@/components/faminance/accounts/account-form"
 import { CreditCardFormValues } from "@/components/faminance/accounts/credit-card-form";
 
 export function useAccountsPage() {
-    const { accounts, creditCards, cashBalance, addDoc, updateDoc, deleteDoc, getAccountBalance } = useFamilyData();
+    const { accounts, creditCards, cashBalance, addDoc, updateDoc, deleteDoc, getAccountBalance, categories, settings, updateSettings } = useFamilyData();
     const [isCreateOpen, setCreateOpen] = useState(false);
     const [isTransferOpen, setTransferOpen] = useState(false);
+    const [isCashEditOpen, setCashEditOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<Account | undefined>(undefined);
     const [editingCard, setEditingCard] = useState<CreditCard | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,11 +25,7 @@ export function useAccountsPage() {
     const deleteCreditCard = (id: string) => deleteDoc('creditCards', id);
 
     const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user' | 'familyId'>) => {
-        const dataToAdd: any = {
-            ...transaction,
-            date: new Date(transaction.date),
-        };
-        await addDoc('transactions', dataToAdd);
+        await addDoc('transactions', transaction);
     };
 
     const totalSavings = useMemo(() => {
@@ -38,7 +35,7 @@ export function useAccountsPage() {
             .reduce((total, acc) => total + getAccountBalance(acc.id), 0);
     }, [accounts, getAccountBalance]);
 
-    const handleSaveAccount = async (accountData: AccountFormValues) => {
+    const handleSaveAccount = async (accountData: AccountFormValues & { nextDepositDate?: string }) => {
         setIsSubmitting(true);
         if (editingAccount) {
             await updateAccount(editingAccount.id, accountData);
@@ -115,6 +112,27 @@ export function useAccountsPage() {
         setTransferOpen(false);
     };
     
+    const handleCashAdjustment = async (newBalance: number) => {
+        setIsSubmitting(true);
+        const difference = newBalance - cashBalance;
+        
+        if (difference !== 0) {
+            // Calculate the new initial balance to make the current balance equal to newBalance
+            // current balance = initialBalance + transactionsSum
+            // transactionsSum = current balance - initialBalance
+            // new initialBalance = newBalance - transactionsSum
+            // Or simpler: new initialBalance = old initialBalance + difference
+            const oldInitialBalance = settings?.initialCashBalance || 0;
+            const newInitialBalance = oldInitialBalance + difference;
+            
+            await updateSettings({ initialCashBalance: newInitialBalance });
+            toast({ title: 'Efectivo actualizado', description: 'El balance inicial de efectivo ha sido ajustado.' });
+        }
+        
+        setIsSubmitting(false);
+        setCashEditOpen(false);
+    };
+    
     const openEditAccountDialog = (account: Account) => {
         setEditingAccount(account);
         setCreateOpen(true); // Re-use the same dialog for editing
@@ -147,5 +165,9 @@ export function useAccountsPage() {
         deleteAccount,
         deleteCreditCard,
         getAccountBalance,
+        categories,
+        isCashEditOpen,
+        setCashEditOpen,
+        handleCashAdjustment,
     };
 }

@@ -44,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFamilyData } from "@/context/family-data-context";
 import { Header } from "@/components/faminance/header";
 import { availableIcons, iconMap } from "@/lib/data";
+import { getNextDueDate } from "@/lib/services/recurring-service";
 
 function GoalForm({
   goal,
@@ -84,20 +85,26 @@ function GoalForm({
       isRecurring,
       ...(isRecurring && { frequency }),
       ...(isRecurring && contributionAmount !== undefined ? { contributionAmount } : {}),
+      // Set nextContributionDate: keep existing if editing, else start from next period
+      ...(isRecurring && frequency && {
+        nextContributionDate:
+          goal?.nextContributionDate ||
+          getNextDueDate(new Date(), frequency)?.toISOString(),
+      }),
     };
     onSave(newGoal, currentAmount);
   };
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="name" className="text-right">Nombre</Label>
-        <Input id="name" name="name" defaultValue={goal?.name} className="col-span-3" required />
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="name" className="text-left sm:text-right text-xs sm:text-sm">Nombre</Label>
+        <Input id="name" name="name" defaultValue={goal?.name} className="col-span-1 sm:col-span-3" required />
       </div>
-       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="accountId" className="text-right">Cuenta</Label>
+       <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="accountId" className="text-left sm:text-right text-xs sm:text-sm">Cuenta</Label>
         <Select name="accountId" required defaultValue={goal?.accountId}>
-            <SelectTrigger className="col-span-3">
+            <SelectTrigger className="col-span-1 sm:col-span-3">
                 <SelectValue placeholder="Seleccionar cuenta de ahorro" />
             </SelectTrigger>
             <SelectContent>
@@ -107,10 +114,10 @@ function GoalForm({
             </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="icon" className="text-right">Icono</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="icon" className="text-left sm:text-right text-xs sm:text-sm">Icono</Label>
         <Select name="icon" defaultValue={goal?.icon || 'Target'}>
-            <SelectTrigger className="col-span-3">
+            <SelectTrigger className="col-span-1 sm:col-span-3">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -134,22 +141,22 @@ function GoalForm({
             </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="targetAmount" className="text-right">Monto Objetivo</Label>
-        <Input id="targetAmount" name="targetAmount" type="number" defaultValue={goal?.targetAmount} className="col-span-3" required />
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="targetAmount" className="text-left sm:text-right text-xs sm:text-sm">Monto Objetivo</Label>
+        <Input id="targetAmount" name="targetAmount" type="number" defaultValue={goal?.targetAmount} className="col-span-1 sm:col-span-3" required />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="currentAmount" className="text-right">Monto Actual</Label>
-            <Input id="currentAmount" name="currentAmount" type="number" placeholder="Opcional" defaultValue={goal?.currentAmount || 0} className="col-span-3" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="currentAmount" className="text-left sm:text-right text-xs sm:text-sm">Monto Actual</Label>
+            <Input id="currentAmount" name="currentAmount" type="number" placeholder="Opcional" defaultValue={goal?.currentAmount || 0} className="col-span-1 sm:col-span-3" />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="targetDate" className="text-right">Fecha Límite</Label>
-        <Input id="targetDate" name="targetDate" type="date" defaultValue={goal?.targetDate.split('T')[0]} className="col-span-3" required />
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="targetDate" className="text-left sm:text-right text-xs sm:text-sm">Fecha Límite</Label>
+        <Input id="targetDate" name="targetDate" type="date" defaultValue={goal?.targetDate.split('T')[0]} className="col-span-1 sm:col-span-3" required />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="priority" className="text-right">Prioridad</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="priority" className="text-left sm:text-right text-xs sm:text-sm">Prioridad</Label>
         <Select name="priority" required defaultValue={goal?.priority || 'Media'}>
-            <SelectTrigger className="col-span-3">
+            <SelectTrigger className="col-span-1 sm:col-span-3">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -159,17 +166,17 @@ function GoalForm({
             </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="isRecurring" className="text-right">Ahorro recurrente</Label>
-        <div className="col-span-3 flex items-center gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+        <Label htmlFor="isRecurring" className="text-left sm:text-right text-xs sm:text-sm">Ahorro recurrente</Label>
+        <div className="col-span-1 sm:col-span-3 flex items-center gap-3">
           <Switch id="isRecurring" checked={isRecurring} onCheckedChange={setIsRecurring} />
           <span className="text-sm text-muted-foreground">Activar aportes automáticos</span>
         </div>
       </div>
       {isRecurring && (
         <>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="contributionAmount" className="text-right">Aporte</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="contributionAmount" className="text-left sm:text-right text-xs sm:text-sm">Aporte</Label>
             <Input
               id="contributionAmount"
               name="contributionAmount"
@@ -177,14 +184,14 @@ function GoalForm({
               value={contributionAmount ?? ''}
               onChange={(event) => setContributionAmount(event.target.value ? Number(event.target.value) : undefined)}
               placeholder="Monto por periodo"
-              className="col-span-3"
+              className="col-span-1 sm:col-span-3"
               min={0}
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="frequency" className="text-right">Frecuencia</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="frequency" className="text-left sm:text-right text-xs sm:text-sm">Frecuencia</Label>
             <Select name="frequency" value={frequency} onValueChange={(value) => setFrequency(value as SavingsGoal['frequency'])}>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-1 sm:col-span-3">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,6 +333,12 @@ export default function GoalsPage() {
     const [isCreateOpen, setCreateOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState<SavingsGoal | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const handleOpen = () => setCreateOpen(true);
+        document.addEventListener('open-add-goal', handleOpen);
+        return () => document.removeEventListener('open-add-goal', handleOpen);
+    }, [setCreateOpen]);
 
     const addGoal = async (goal: Omit<SavingsGoal, 'id' | 'currentAmount' | 'familyId'>, currentAmount?: number) => {
         const dataToAdd = { 

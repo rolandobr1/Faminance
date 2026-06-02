@@ -41,25 +41,89 @@ export function useBudgetsPage() {
 
     const budgetsWithSpent = useMemo(() => {
         if (!currentDate) return [];
-
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonth(currentDate);
 
-        const processedBudgets = budgets.map(budget => {
-            const spent = transactions
-                .filter(t => {
-                    const transactionDate = parseISO(t.date);
-                    return t.category === budget.category && 
-                           t.type === 'expense' && 
-                           transactionDate >= monthStart && 
-                           transactionDate <= monthEnd;
-                })
-                .reduce((acc, t) => acc + t.amount, 0);
-            const progress = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
-            const remaining = budget.limit - spent;
-            const categoryInfo = categories.find(c => c.value === budget.category);
-            return { ...budget, spent, progress, remaining, categoryInfo };
+        const monthlyExpenses = transactions.filter(t => {
+            const d = parseISO(t.date);
+            return t.type === 'expense' && d >= monthStart && d <= monthEnd;
         });
+
+        const getSpent = (cat: string) => monthlyExpenses.filter(t => t.category === cat).reduce((s, t) => s + t.amount, 0);
+
+        const processedBudgets: any[] = [];
+        const processedCategories = new Set<string>();
+
+        const rootCategories = categories.filter(c => !c.parentId);
+
+        for (const rootCat of rootCategories) {
+            const rootBudget = budgets.find(b => b.category === rootCat.value);
+            const childCats = categories.filter(c => c.parentId === rootCat.value);
+            
+            const subcategories = childCats.map(childCat => {
+                const childBudget = budgets.find(b => b.category === childCat.value);
+                const childSpent = getSpent(childCat.value);
+                const childLimit = childBudget?.limit || 0;
+                
+                if (childBudget) processedCategories.add(childCat.value);
+                
+                if (childBudget || childSpent > 0) {
+                    return {
+                        id: childBudget?.id || `sub-${childCat.value}`,
+                        category: childCat.value,
+                        categoryInfo: childCat,
+                        limit: childLimit,
+                        spent: childSpent,
+                        progress: childLimit > 0 ? (childSpent / childLimit) * 100 : 0,
+                        remaining: childLimit - childSpent,
+                    };
+                }
+                return null;
+            }).filter(Boolean) as any[];
+
+            const rootSpent = getSpent(rootCat.value);
+            const totalSpent = rootSpent + subcategories.reduce((acc, sub) => acc + sub.spent, 0);
+            
+            let totalLimit = rootBudget?.limit || 0;
+            if (!rootBudget) {
+                totalLimit = subcategories.reduce((acc, sub) => acc + sub.limit, 0);
+            }
+
+            if (rootBudget) processedCategories.add(rootCat.value);
+
+            if (rootBudget || totalLimit > 0) {
+                processedBudgets.push({
+                    id: rootBudget?.id || `root-${rootCat.value}`,
+                    familyId: rootBudget?.familyId || 'main-family',
+                    category: rootCat.value,
+                    period: rootBudget?.period || 'mensual',
+                    limit: totalLimit,
+                    spent: totalSpent,
+                    progress: totalLimit > 0 ? (totalSpent / totalLimit) * 100 : 0,
+                    remaining: totalLimit - totalSpent,
+                    categoryInfo: rootCat,
+                    subcategories,
+                    isVirtualParent: !rootBudget
+                });
+            }
+        }
+
+        // Now, catch any budgets that belong to categories not found or missing parent references
+        for (const budget of budgets) {
+            if (!processedCategories.has(budget.category)) {
+                const categoryInfo = categories.find(c => c.value === budget.category);
+                const spent = getSpent(budget.category);
+                processedBudgets.push({
+                    ...budget,
+                    spent,
+                    progress: budget.limit > 0 ? (spent / budget.limit) * 100 : 0,
+                    remaining: budget.limit - spent,
+                    categoryInfo,
+                    subcategories: [],
+                    isVirtualParent: false
+                });
+            }
+        }
 
         return processedBudgets.sort((a, b) => {
             switch (sortOption) {
@@ -101,13 +165,14 @@ export function useBudgetsPage() {
 
     const handleSaveBudget = async (budgetData: Omit<Budget, 'id' | 'spent' | 'familyId'>) => {
         setIsSubmitting(true);
-        if (editingBudget) {
+        if (editingBudget && !editingBudget.id.startsWith('root-')) {
             await updateBudget(editingBudget.id, budgetData);
             setEditingBudget(undefined);
             toast({ title: "Presupuesto actualizado", description: "El presupuesto ha sido actualizado exitosamente." });
         } else {
             await addBudget(budgetData);
             setIsCreateOpen(false);
+            setEditingBudget(undefined);
             toast({ title: "Presupuesto creado", description: "El nuevo presupuesto ha sido creado." });
         }
         setIsSubmitting(false);

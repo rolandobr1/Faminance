@@ -84,6 +84,8 @@ export function AddTransactionSheet({
     const [loanId, setLoanId] = useState<string | undefined>();
 
     const [key, setKey] = useState(Date.now()); // Key to reset form
+    const [hasInitialized, setHasInitialized] = useState(false);
+    const [lastInitializedId, setLastInitializedId] = useState<string | undefined>(undefined);
 
     const isEditing = !!(transactionToEdit && transactionToEdit.id);
     const isSimplified = !!defaultCategoryValue && !isEditing;
@@ -117,15 +119,25 @@ export function AddTransactionSheet({
 
 
     useEffect(() => {
-        if (!forceOpen && !isOpen) return;
+        const open = forceOpen || isOpen;
+        if (!open) {
+            setHasInitialized(false);
+            setLastInitializedId(undefined);
+            return;
+        }
+
+        const editId = transactionToEdit?.id;
+        if (hasInitialized && editId === lastInitializedId) {
+            return;
+        }
 
         // Reset and populate form
         setKey(Date.now()); 
         
-        const typeToSet = transactionToEdit?.type || defaultType;
-        setTransactionType(typeToSet || undefined);
+        const typeToSet = transactionToEdit?.type || defaultType || 'expense';
+        setTransactionType(typeToSet);
 
-        const categoryValue = transactionToEdit?.category || defaultCategoryValue;
+        const categoryValue = transactionToEdit?.category || defaultCategoryValue || (typeToSet === 'expense' ? 'other-expense' : 'other-income');
         const category = categoryValue ? categories.find(c => c.value === categoryValue) : undefined;
         if (category) {
             setSelectedCategory({ value: category.value, label: category.label, icon: category.icon });
@@ -163,7 +175,27 @@ export function AddTransactionSheet({
         setReceiptFile(null);
         setReceiptPreview(transactionToEdit?.receiptUrl || null);
 
-    }, [transactionToEdit?.id, forceOpen, defaultCategoryValue, defaultPaymentMethod, defaultCreditCardId, defaultLoanId, defaultAmount, defaultCurrency, categories, creditCards, accounts, paymentMethodOptions]);
+        setHasInitialized(true);
+        setLastInitializedId(editId);
+
+    }, [
+        isOpen,
+        forceOpen,
+        hasInitialized,
+        lastInitializedId,
+        transactionToEdit,
+        defaultType,
+        defaultCategoryValue,
+        defaultPaymentMethod,
+        defaultCreditCardId,
+        defaultLoanId,
+        defaultAmount,
+        defaultCurrency,
+        categories,
+        creditCards,
+        accounts,
+        paymentMethodOptions
+    ]);
 
 
     const handleOpenChange = (open: boolean) => {
@@ -296,12 +328,12 @@ export function AddTransactionSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? 'bottom' : 'right'} className="grid grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] bg-[#0d121f] border-l-white/10 p-0 sm:max-w-md">
-            <SheetHeader className="p-6 pb-4 border-b border-white/5 bg-[#111827]/80 backdrop-blur-md relative z-10">
-                <SheetTitle className="font-headline text-2xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+        <SheetContent side={isMobile ? 'bottom' : 'right'} className="grid grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] bg-background/90 backdrop-blur-3xl border-l-border p-0 sm:max-w-md">
+            <SheetHeader className="p-6 pb-4 border-b border-border/50 glass-header relative z-10">
+                <SheetTitle className="font-headline text-2xl tracking-tight text-foreground">
                     {isEditing ? 'Editar Transacción' : 'Nueva Transacción'}
                 </SheetTitle>
-                <SheetDescription className="text-slate-400">
+                <SheetDescription className="text-muted-foreground">
                     {isEditing ? 'Modifica los detalles.' : 'Registra un ingreso o gasto.'}
                 </SheetDescription>
             </SheetHeader>
@@ -315,20 +347,26 @@ export function AddTransactionSheet({
                 <div className="p-6 space-y-6 relative z-10">
                     {/* TYPE SELECTOR */}
                     {!isSimplified && (
-                        <div className="flex items-center p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative shadow-inner">
+                        <div className="flex items-center p-1 bg-muted/20 rounded-full border border-border/50 backdrop-blur-sm relative shadow-inner">
                             <Button 
                                 type="button" 
                                 onClick={() => {
                                     setTransactionType('expense');
-                                    if (selectedCategory?.value && categories.find(c => c.value === selectedCategory.value)?.type !== 'expense') {
-                                        setSelectedCategory(undefined);
+                                    const currentCat = selectedCategory?.value ? categories.find(c => c.value === selectedCategory.value) : null;
+                                    if (!currentCat || currentCat.type !== 'expense') {
+                                        const otherExpense = categories.find(c => c.value === 'other-expense');
+                                        if (otherExpense) {
+                                            setSelectedCategory({ value: otherExpense.value, label: otherExpense.label, icon: otherExpense.icon });
+                                        } else {
+                                            setSelectedCategory(undefined);
+                                        }
                                     }
                                 }}
                                 className={cn(
                                     "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
                                     transactionType === 'expense' 
-                                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                                        : 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-red-500/20 text-red-500 dark:text-red-400 hover:bg-red-500/30' 
+                                        : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 )}
                                 variant="ghost"
                             >
@@ -338,8 +376,14 @@ export function AddTransactionSheet({
                                 type="button" 
                                 onClick={() => {
                                     setTransactionType('income');
-                                        if (selectedCategory?.value && categories.find(c => c.value === selectedCategory.value)?.type !== 'income') {
-                                        setSelectedCategory(undefined);
+                                    const currentCat = selectedCategory?.value ? categories.find(c => c.value === selectedCategory.value) : null;
+                                    if (!currentCat || currentCat.type !== 'income') {
+                                        const otherIncome = categories.find(c => c.value === 'other-income');
+                                        if (otherIncome) {
+                                            setSelectedCategory({ value: otherIncome.value, label: otherIncome.label, icon: otherIncome.icon });
+                                        } else {
+                                            setSelectedCategory(undefined);
+                                        }
                                     }
                                     if (selectedPaymentMethod?.value === 'Tarjeta de Crédito') {
                                         setSelectedPaymentMethod(undefined);
@@ -348,8 +392,8 @@ export function AddTransactionSheet({
                                 className={cn(
                                     "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
                                     transactionType === 'income' 
-                                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                                        : 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-green-500/20 text-green-500 dark:text-green-400 hover:bg-green-500/30' 
+                                        : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 )}
                                 variant="ghost"
                             >
@@ -360,25 +404,27 @@ export function AddTransactionSheet({
 
                     {/* AMOUNT DISPLAY */}
                     <div className={cn(
-                        "flex flex-col items-center justify-center p-6 rounded-3xl bg-gradient-to-b from-white/[0.08] to-transparent border border-white/10 backdrop-blur-md shadow-2xl transition-colors duration-500 relative overflow-hidden group",
-                        transactionType === 'income' ? 'shadow-green-500/10' : 'shadow-red-500/10'
+                        "flex flex-col items-center justify-center p-6 rounded-3xl backdrop-blur-md shadow-2xl transition-all duration-500 relative overflow-hidden group border",
+                        transactionType === 'income' 
+                            ? 'bg-gradient-to-b from-emerald-500/15 to-emerald-500/5 border-emerald-500/25 shadow-emerald-500/10' 
+                            : 'bg-gradient-to-b from-rose-500/15 to-rose-500/5 border-rose-500/25 shadow-rose-500/10'
                     )}>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
-                        <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Monto</Label>
+                        <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Monto</Label>
                         <div className="flex items-center justify-center gap-2">
                             <Select value={currency} onValueChange={(value) => setCurrency(value as 'DOP' | 'USD')}>
-                                <SelectTrigger className="border-none bg-white/5 hover:bg-white/10 rounded-xl h-10 px-3 text-slate-300 font-medium focus:ring-0 w-auto shadow-inner transition-colors">
+                                <SelectTrigger className="border-none bg-muted/20 hover:bg-muted/50 rounded-xl h-10 px-3 text-foreground font-medium focus:ring-0 w-auto shadow-inner transition-colors">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#111827] border-white/10 text-white">
+                                <SelectContent className="bg-popover border-border/50 text-foreground">
                                     <SelectItem value="DOP">DOP</SelectItem>
                                     <SelectItem value="USD">USD</SelectItem>
                                 </SelectContent>
                             </Select>
                             
                             <span className={cn(
-                                "text-4xl md:text-5xl font-semibold opacity-50 transition-colors",
-                                transactionType === 'income' ? 'text-green-500' : 'text-red-500'
+                                "text-4xl md:text-5xl font-semibold opacity-90 transition-colors drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]",
+                                transactionType === 'income' ? 'text-emerald-400' : 'text-rose-400'
                             )}>$</span>
                             <Input
                                 id="amount"
@@ -389,8 +435,8 @@ export function AddTransactionSheet({
                                 value={displayAmount}
                                 onChange={handleAmountChange}
                                 className={cn(
-                                    "text-5xl md:text-6xl font-bold font-headline border-none bg-transparent h-auto p-0 focus-visible:ring-0 shadow-none w-full max-w-[200px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors",
-                                    transactionType === 'income' ? 'text-green-400 placeholder:text-green-900/50' : 'text-red-400 placeholder:text-red-900/50'
+                                    "text-5xl md:text-6xl font-bold font-headline border-none bg-transparent h-auto p-0 focus-visible:ring-0 shadow-none w-full max-w-[200px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]",
+                                    transactionType === 'income' ? 'text-emerald-500 dark:text-white placeholder:text-emerald-500/30' : 'text-rose-500 dark:text-white placeholder:text-rose-500/30'
                                 )}
                                 inputMode="decimal"
                             />
@@ -443,12 +489,12 @@ export function AddTransactionSheet({
                     )}
                     
                     {/* DETAILS SECTION */}
-                    <div className="space-y-4 p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05]">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Detalles</h3>
+                    <div className="space-y-4 p-5 rounded-2xl bg-muted/10 border border-border/50">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Detalles</h3>
                         
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
-                                <CalendarIcon className="h-5 w-5 text-blue-400" />
+                                <CalendarIcon className="h-5 w-5 text-blue-500 dark:text-blue-400" />
                             </div>
                             <div className="flex-1">
                                 <Input 
@@ -458,14 +504,14 @@ export function AddTransactionSheet({
                                     value={date} 
                                     onChange={(e) => setDate(e.target.value)} 
                                     required
-                                    className="bg-transparent border-none text-white focus-visible:ring-1 focus-visible:ring-white/20 h-10 px-2"
+                                    className="bg-transparent border-none text-foreground focus-visible:ring-1 focus-visible:ring-primary/20 h-10 px-2"
                                 />
                             </div>
                         </div>
 
                         <div className="flex items-start gap-3">
                             <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0 border border-purple-500/20 mt-1">
-                                <AlignLeft className="h-5 w-5 text-purple-400" />
+                                <AlignLeft className="h-5 w-5 text-purple-500 dark:text-purple-400" />
                             </div>
                             <div className="flex-1">
                                 <Textarea 
@@ -474,19 +520,19 @@ export function AddTransactionSheet({
                                     placeholder="Agrega una nota..." 
                                     value={description} 
                                     onChange={e => setDescription(e.target.value)}
-                                    className="bg-transparent border-none text-white placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-white/20 min-h-[60px] resize-none px-2 py-2"
+                                    className="bg-transparent border-none text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/20 min-h-[60px] resize-none px-2 py-2"
                                 />
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                                <Receipt className="h-5 w-5 text-emerald-400" />
+                                <Receipt className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
                             </div>
                             <div className="flex-1 relative overflow-hidden">
-                                <label htmlFor="receipt-input" className="flex items-center justify-between w-full h-10 px-2 rounded-md bg-transparent text-sm cursor-pointer hover:bg-white/5 transition-colors text-slate-300">
+                                <label htmlFor="receipt-input" className="flex items-center justify-between w-full h-10 px-2 rounded-md bg-transparent text-sm cursor-pointer hover:bg-muted/50 transition-colors text-foreground/80">
                                     <span className="truncate">{receiptFile ? receiptFile.name : (receiptPreview ? 'Recibo adjunto' : 'Adjuntar comprobante')}</span>
-                                    <Upload className="h-4 w-4 text-slate-500 shrink-0" />
+                                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
                                 </label>
                                 <input id="receipt-input" type="file" accept="image/*" className="sr-only" onChange={handleReceiptChange} />
                             </div>
@@ -494,7 +540,7 @@ export function AddTransactionSheet({
                         
                         {receiptPreview && (
                             <div className="pl-14 pr-2">
-                                <img src={receiptPreview} alt="Vista previa del recibo" className="rounded-xl border border-white/10 max-h-32 object-cover w-full opacity-80 hover:opacity-100 transition-opacity" />
+                                <img src={receiptPreview} alt="Vista previa del recibo" className="rounded-xl border border-border/50 max-h-32 object-cover w-full opacity-80 hover:opacity-100 transition-opacity" />
                             </div>
                         )}
                         {uploadProgress !== null && (
@@ -511,17 +557,17 @@ export function AddTransactionSheet({
                     </div>
 
                     {/* ADVANCED SECTION */}
-                    <div className="space-y-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">
+                    <div className="space-y-4 p-5 rounded-2xl bg-muted/5 border border-border/50">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
                             <Sparkles className="h-3 w-3" /> Opciones Avanzadas
                         </h3>
 
                         <div className="flex items-center justify-between group">
                             <div className="flex items-center gap-3">
                                 <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20 group-hover:scale-110 transition-transform">
-                                    <RefreshCw className="h-4 w-4 text-orange-400" />
+                                    <RefreshCw className="h-4 w-4 text-orange-500 dark:text-orange-400" />
                                 </div>
-                                <Label htmlFor="recurring-expense" className="text-slate-300 cursor-pointer">Gasto Recurrente</Label>
+                                <Label htmlFor="recurring-expense" className="text-foreground/80 cursor-pointer">Gasto Recurrente</Label>
                             </div>
                             <Switch id="recurring-expense" checked={isRecurring} onCheckedChange={setIsRecurring} className="data-[state=checked]:bg-orange-500" />
                         </div>
@@ -529,10 +575,10 @@ export function AddTransactionSheet({
                         {isRecurring && (
                             <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200">
                                 <Select name="frequency" defaultValue={transactionToEdit?.frequency || "monthly"}>
-                                    <SelectTrigger className="bg-black/20 border-white/10 text-slate-300 h-9 w-full">
+                                    <SelectTrigger className="bg-muted/30 border-border/50 text-foreground/80 h-9 w-full">
                                         <SelectValue placeholder="Seleccionar frecuencia" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#111827] border-white/10 text-white">
+                                    <SelectContent className="bg-popover border-border/50 text-foreground">
                                         <SelectItem value="daily">Diaria</SelectItem>
                                         <SelectItem value="weekly">Semanal</SelectItem>
                                         <SelectItem value="bi-weekly">Quincenal</SelectItem>
@@ -543,24 +589,24 @@ export function AddTransactionSheet({
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between group pt-2 border-t border-white/5 mt-2">
+                        <div className="flex items-center justify-between group pt-2 border-t border-border/50 mt-2">
                             <div className="flex items-center gap-3 pt-2">
                                 <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
-                                    <Users className="h-4 w-4 text-cyan-400" />
+                                    <Users className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                                 </div>
-                                <Label htmlFor="shared-expense" className="text-slate-300 cursor-pointer">Gasto Compartido</Label>
+                                <Label htmlFor="shared-expense" className="text-foreground/80 cursor-pointer">Gasto Compartido</Label>
                             </div>
                             <Switch id="shared-expense" name="isShared" checked={isShared} onCheckedChange={setIsShared} className="data-[state=checked]:bg-cyan-500" />
                         </div>
 
                         {isShared && (
                             <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                                <div className="space-y-3 rounded-xl bg-black/20 border border-white/5 p-3">
-                                    <p className="text-xs text-slate-400 mb-1">Dividir con:</p>
+                                <div className="space-y-3 rounded-xl bg-muted/30 border border-border/50 p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Dividir con:</p>
                                     {members.map(member => (
-                                        <div key={member.id} className="flex items-center space-x-3 bg-white/5 p-2 rounded-lg border border-white/5 hover:border-cyan-500/30 transition-colors">
-                                            <Checkbox id={`user-${member.id}`} name={`user-${member.id}`} defaultChecked={transactionToEdit?.sharedWith?.includes(member.id)} className="data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 border-white/20" />
-                                            <Label htmlFor={`user-${member.id}`} className="font-medium text-slate-200 cursor-pointer flex-1">{member.name}</Label>
+                                        <div key={member.id} className="flex items-center space-x-3 bg-background/50 p-2 rounded-lg border border-border/50 hover:border-cyan-500/30 transition-colors">
+                                            <Checkbox id={`user-${member.id}`} name={`user-${member.id}`} defaultChecked={transactionToEdit?.sharedWith?.includes(member.id)} className="data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 border-border" />
+                                            <Label htmlFor={`user-${member.id}`} className="font-medium text-foreground cursor-pointer flex-1">{member.name}</Label>
                                         </div>
                                     ))}
                                 </div>
@@ -572,9 +618,9 @@ export function AddTransactionSheet({
                     <div className="h-8"></div>
                 </div>
             </form>
-            <SheetFooter className="p-4 border-t border-white/10 bg-[#111827]/90 backdrop-blur-xl sm:justify-between items-center z-20 sticky bottom-0">
+            <SheetFooter className="p-4 border-t border-border/50 glass-header sm:justify-between items-center z-20 sticky bottom-0">
                 <SheetClose asChild>
-                    <Button variant="ghost" type="button" className="text-slate-400 hover:text-white hover:bg-white/5 px-6">Cancelar</Button>
+                    <Button variant="ghost" type="button" className="text-muted-foreground hover:text-foreground hover:bg-muted/50 px-6">Cancelar</Button>
                 </SheetClose>
                 <Button 
                     type="submit" 

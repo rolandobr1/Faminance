@@ -124,9 +124,11 @@ export function TransactionTable({
         <div>
             {sortedDates.map(date => (
                 <div key={date} className="mb-6">
-                    <h3 className="text-lg font-semibold font-headline mb-2 sticky top-16 bg-background/95 py-2 z-10">
-                        {format(getLocalDisplayDate(date), "EEEE, d 'de' MMMM", { locale: es })}
-                    </h3>
+                    <div className="sticky top-14 z-20 py-2 flex w-full pointer-events-none mb-1">
+                        <h3 className="text-sm font-medium font-headline backdrop-blur-xl bg-background/70 border border-border/50 shadow-sm px-4 py-1.5 rounded-full pointer-events-auto inline-flex">
+                            {format(getLocalDisplayDate(date), "EEEE, d 'de' MMMM", { locale: es })}
+                        </h3>
+                    </div>
                     <Table>
                         <TableHeader>
                             <TableRow>

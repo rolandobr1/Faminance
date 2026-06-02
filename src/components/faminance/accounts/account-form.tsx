@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Account } from "@/lib/types";
+import type { Account, Category } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { getNextDueDate } from "@/lib/services/recurring-service";
 
 const accountFormSchema = z.object({
     name: z.string().min(1, "El nombre es requerido."),
@@ -21,19 +23,31 @@ const accountFormSchema = z.object({
     balance: z.preprocess(
         (val) => (val === '' || val === undefined ? 0 : typeof val === 'string' ? parseFloat(val) : val),
         z.number({ invalid_type_error: "El balance debe ser un número." }).min(0, "El balance no puede ser negativo.")
-    )
+    ),
+    isRecurringDeposit: z.boolean().optional(),
+    depositAmount: z.preprocess(
+        (val) => (val === '' || val === undefined ? undefined : typeof val === 'string' ? parseFloat(val) : val),
+        z.number({ invalid_type_error: "El monto debe ser un número." }).min(0, "El monto no puede ser negativo.").optional()
+    ),
+    depositFrequency: z.enum(['daily', 'weekly', 'bi-weekly', 'monthly', 'yearly']).optional(),
+    depositSourceAccountId: z.string().optional(),
+    depositCategory: z.string().optional(),
 });
 
 export type AccountFormValues = z.infer<typeof accountFormSchema>;
 
 export function AccountForm({ 
     account,
+    accounts = [],
+    categories = [],
     onSave,
     onClose,
     isSubmitting
 }: { 
     account?: Account,
-    onSave: (data: AccountFormValues) => void,
+    accounts?: Account[],
+    categories?: Category[],
+    onSave: (data: AccountFormValues & { nextDepositDate?: string }) => void,
     onClose: () => void,
     isSubmitting: boolean
 }) {
@@ -44,11 +58,26 @@ export function AccountForm({
             bank: account?.bank || '',
             type: account?.type || undefined,
             balance: account?.balance || 0,
+            isRecurringDeposit: account?.isRecurringDeposit || false,
+            depositAmount: account?.depositAmount,
+            depositFrequency: account?.depositFrequency,
+            depositSourceAccountId: account?.depositSourceAccountId,
+            depositCategory: account?.depositCategory || 'saving-contribution',
         },
     });
 
+    const isRecurringDeposit = form.watch("isRecurringDeposit");
+
     function onSubmit(data: AccountFormValues) {
-        onSave(data);
+        let nextDepositDate = account?.nextDepositDate;
+        if (data.isRecurringDeposit && data.depositFrequency && !nextDepositDate) {
+            nextDepositDate = getNextDueDate(new Date(), data.depositFrequency)?.toISOString();
+        }
+        
+        onSave({
+            ...data,
+            ...(data.isRecurringDeposit && nextDepositDate ? { nextDepositDate } : {})
+        });
     }
 
     return (
@@ -114,6 +143,117 @@ export function AccountForm({
                         </FormItem>
                     )}
                 />
+
+                <FormField
+                    control={form.control}
+                    name="isRecurringDeposit"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Aporte Automático</FormLabel>
+                                <div className="text-sm text-muted-foreground">
+                                    Recibir fondos automáticamente en esta cuenta.
+                                </div>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                {isRecurringDeposit && (
+                    <div className="space-y-4 border-l-2 border-primary/20 pl-4 py-2 mt-2">
+                        <FormField
+                            control={form.control}
+                            name="depositAmount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Monto del Aporte</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="RD$0.00" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="depositFrequency"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Frecuencia</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar frecuencia" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="daily">Diaria</SelectItem>
+                                            <SelectItem value="weekly">Semanal</SelectItem>
+                                            <SelectItem value="bi-weekly">Quincenal</SelectItem>
+                                            <SelectItem value="monthly">Mensual</SelectItem>
+                                            <SelectItem value="yearly">Anual</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                   <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="depositSourceAccountId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Cuenta de Origen</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="¿De dónde sale el dinero?" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="cash">💵 Efectivo a Mano</SelectItem>
+                                            {accounts.filter(a => a.id !== account?.id).map(a => (
+                                                <SelectItem key={a.id} value={a.id}>🏦 {a.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                   <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="depositCategory"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Categoría del Gasto</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccione una categoría" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {categories.filter(c => c.type === 'expense').map(c => (
+                                                <SelectItem key={c.id || c.value} value={c.value}>{c.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        Bajo esta categoría se registrará el descuento del efectivo/cuenta.
+                                    </div>
+                                   <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
 
                 <DialogFooter className="pt-4">
                     <DialogClose asChild>

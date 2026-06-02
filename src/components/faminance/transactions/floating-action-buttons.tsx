@@ -23,32 +23,65 @@ export function FloatingTransactionButtons() {
 
     return (
         <TooltipProvider>
-            <div className="fixed bottom-20 right-6 sm:bottom-6 z-20 flex flex-col gap-3">
+            <div className="fixed bottom-20 right-6 sm:bottom-6 z-20 hidden sm:flex flex-col gap-3">
+                {/* Expense button — red glass */}
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button
-                            size="icon"
-                            className="h-14 w-14 rounded-full shadow-lg bg-destructive hover:bg-destructive/90"
+                        <button
                             onClick={() => setTransactionTypeToAdd('expense')}
+                            className="
+                                group relative h-14 w-14 rounded-full
+                                flex items-center justify-center
+                                backdrop-blur-xl
+                                bg-red-500/20
+                                border border-red-400/30
+                                shadow-[0_8px_32px_rgba(239,68,68,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]
+                                hover:bg-red-500/35
+                                hover:border-red-400/50
+                                hover:shadow-[0_12px_40px_rgba(239,68,68,0.55),inset_0_1px_0_rgba(255,255,255,0.2)]
+                                hover:scale-110
+                                active:scale-95
+                                transition-all duration-200 ease-out
+                                cursor-pointer
+                            "
                         >
-                            <Minus className="h-6 w-6" />
+                            {/* Inner glass highlight */}
+                            <span className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                            <Minus className="h-6 w-6 text-red-200 drop-shadow-[0_0_6px_rgba(239,68,68,0.8)] relative z-10" />
                             <span className="sr-only">Registrar Gasto</span>
-                        </Button>
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
                         <p>Registrar Gasto</p>
                     </TooltipContent>
                 </Tooltip>
+
+                {/* Income button — green/primary glass */}
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button
-                            size="icon"
-                            className="h-14 w-14 rounded-full shadow-lg"
+                        <button
                             onClick={() => setTransactionTypeToAdd('income')}
+                            className="
+                                group relative h-14 w-14 rounded-full
+                                flex items-center justify-center
+                                backdrop-blur-xl
+                                bg-emerald-500/20
+                                border border-emerald-400/30
+                                shadow-[0_8px_32px_rgba(52,211,153,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]
+                                hover:bg-emerald-500/35
+                                hover:border-emerald-400/50
+                                hover:shadow-[0_12px_40px_rgba(52,211,153,0.55),inset_0_1px_0_rgba(255,255,255,0.2)]
+                                hover:scale-110
+                                active:scale-95
+                                transition-all duration-200 ease-out
+                                cursor-pointer
+                            "
                         >
-                            <Plus className="h-6 w-6" />
+                            {/* Inner glass highlight */}
+                            <span className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                            <Plus className="h-6 w-6 text-emerald-200 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] relative z-10" />
                             <span className="sr-only">Añadir Ingreso</span>
-                        </Button>
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
                         <p>Añadir Ingreso</p>

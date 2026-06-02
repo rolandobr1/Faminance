@@ -62,11 +62,11 @@ export function BudgetForm({
 
   return (
      <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-        <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">
+         <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="category" className="text-left sm:text-right text-xs sm:text-sm">
             Categoría
             </Label>
-            <div className="col-span-3">
+            <div className="col-span-1 sm:col-span-3">
                  <SelectionModal 
                     title="Categoría" 
                     options={categoryOptions} 
@@ -76,18 +76,18 @@ export function BudgetForm({
                 />
             </div>
         </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="limit" className="text-right">
+        <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="limit" className="text-left sm:text-right text-xs sm:text-sm">
             Límite
             </Label>
-            <Input id="limit" name="limit" type="number" defaultValue={budget?.limit} placeholder="RD$0.00" className="col-span-3" required/>
+            <Input id="limit" name="limit" type="number" defaultValue={budget?.limit} placeholder="RD$0.00" className="col-span-1 sm:col-span-3" required/>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="period" className="text-right">
+        <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="period" className="text-left sm:text-right text-xs sm:text-sm">
             Período
             </Label>
             <Select name="period" defaultValue={budget?.period || "mensual"}>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-1 sm:col-span-3">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

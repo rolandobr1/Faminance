@@ -91,6 +91,7 @@ export const defaultCategories: Omit<Category, 'id' | 'familyId'>[] = [
     { value: 'debt-payment', label: 'Pago de Deudas', icon: 'CreditCard', type: 'expense', isActive: true },
     { value: 'credit-card-payment', label: 'Pago de Tarjeta de Crédito', icon: 'CreditCard', type: 'expense', isActive: true },
     { value: 'transfer', label: 'Transferencia', icon: 'Repeat', type: 'expense', isActive: true },
+    { value: 'saving-contribution', label: 'Aporte de Ahorro', icon: 'PiggyBank', type: 'expense', isActive: true },
     { value: 'other-expense', label: 'Otros Gastos', icon: 'Plus', type: 'expense', isActive: true },
     
     // Income

@@ -1,9 +1,13 @@
 
-
 export type FirestoreDocument = {
   id: string;
   familyId: string; // To support multi-tenancy
 }
+
+export type FamilySettings = FirestoreDocument & {
+  initialCashBalance: number;
+  reminderDays?: number; // Days before due date to show payment reminders
+};
 
 export type RecurringFrequency = 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
 
@@ -26,6 +30,7 @@ export type Transaction = FirestoreDocument & {
   nextDueDate?: string; // New field for recurring transactions
   budgetId?: string;
   loanId?: string;
+  goalId?: string; // Link to savings goal for automatic contributions
 };
 
 export type Category = FirestoreDocument & {
@@ -65,6 +70,9 @@ export type User = {
   role: 'Admin' | 'Usuario';
   avatar?: string;      // emoji or initials override
   allowance?: number;   // monthly allowance in DOP
+  showBottomNav?: boolean;
+  bottomNavItems?: string[];
+  showExpenseOverview?: boolean;
 };
 
 export type Account = FirestoreDocument & {
@@ -72,6 +80,12 @@ export type Account = FirestoreDocument & {
   type: 'ahorro' | 'corriente';
   balance: number;
   bank: string;
+  isRecurringDeposit?: boolean;
+  depositAmount?: number;
+  depositFrequency?: RecurringFrequency;
+  depositSourceAccountId?: string; // "cash" or an account ID
+  depositCategory?: string; // User selected category for the deposit expense
+  nextDepositDate?: string;
 };
 
 export type CreditCard = FirestoreDocument & {
@@ -104,13 +118,14 @@ export type OverduePayment = {
   status: 'overdue' | 'dueSoon';
 };
 
-export interface FamilyData {
-    familyId: string;
-    transactions: Transaction[];
-    categories: Category[];
-    budgets: Budget[];
-    savingsGoals: SavingsGoal[];
-    accounts: Account[];
-    creditCards: CreditCard[];
-    loans: Loan[];
-}
+export type FamilyData = {
+  familyId: string;
+  transactions: Transaction[];
+  categories: Category[];
+  budgets: Budget[];
+  savingsGoals: SavingsGoal[];
+  accounts: Account[];
+  creditCards: CreditCard[];
+  loans: Loan[];
+  settings?: FamilySettings;
+};

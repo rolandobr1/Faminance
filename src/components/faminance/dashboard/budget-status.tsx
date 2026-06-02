@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { iconMap } from "@/lib/data";
 import type { Budget, Transaction, Category } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getProgressColor } from "@/lib/utils";
 import { useMemo, useState, useEffect } from "react";
 import { Sparkles, ReceiptText, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -82,12 +82,7 @@ export function BudgetStatus() {
 
     const deleteTransaction = (id: string) => deleteDoc('transactions', id);
 
-  const getProgressColor = (progress: number) => {
-    if (progress > 90) return "bg-destructive";
-    if (progress > 75) return "bg-accent";
-    return "bg-primary";
-  }
-  
+
   return (
     <>
       <section>
@@ -128,7 +123,7 @@ export function BudgetStatus() {
                                     Límite Total: {totalBudgeted.toLocaleString('es-do', { style: 'currency', currency: 'DOP' })}
                                 </p>
                             </div>
-                            <div className="text-right text-xs font-bold mt-1" style={{color: getProgressColor(totalProgress)}}>
+                            <div className="text-right text-xs font-bold mt-1 text-muted-foreground">
                                 {totalProgress.toFixed(0)}% del presupuesto total utilizado
                             </div>
                         </div>
@@ -168,7 +163,7 @@ export function BudgetStatus() {
                                             </p>
                                         </div>
                                         <Progress value={Math.min(100, budget.progress)} className="h-2" indicatorClassName={cn(getProgressColor(budget.progress))} />
-                                        <div className="text-right text-xs font-bold mt-1" style={{color: getProgressColor(budget.progress)}}>
+                                        <div className="text-right text-xs font-bold mt-1 text-muted-foreground">
                                             {budget.progress.toFixed(0)}%
                                         </div>
                                     </CardContent>

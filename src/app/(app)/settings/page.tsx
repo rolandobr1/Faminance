@@ -38,6 +38,7 @@ import { useAuth } from "@/context/auth-context";
 import { Separator } from "@/components/ui/separator";
 import { useFamilyData } from "@/context/family-data-context";
 import { Header } from "@/components/faminance/header";
+import { cn } from "@/lib/utils";
 
 
 const getInitials = (name: string) => {
@@ -178,6 +179,8 @@ function CategoryList({
     );
 }
 
+import { ThemeToggle } from "@/components/theme-toggle";
+
 export default function SettingsPage() {
     const { currentUser } = useAuth();
     const { categories, addDoc, updateDoc, deleteDoc, members, addMember, updateMember, deleteMember } = useFamilyData();
@@ -309,6 +312,108 @@ export default function SettingsPage() {
       <Header title="Ajustes" />
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 pb-20 sm:pb-0">
         <div className="grid gap-8 lg:grid-cols-2">
+            
+            {/* Theme Settings */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <CardTitle className="font-headline">Apariencia</CardTitle>
+                            <CardDescription className="mt-1.5">Personaliza el aspecto visual de la aplicación.</CardDescription>
+                        </div>
+                        <ThemeToggle />
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                        <div>
+                            <CardTitle className="text-base font-medium">Resumen de Gastos en Panel</CardTitle>
+                            <CardDescription className="text-sm">Muestra un gráfico circular y las últimas transacciones en el inicio.</CardDescription>
+                        </div>
+                        <Switch 
+                            checked={members.find(m => m.id === currentUser?.id)?.showExpenseOverview ?? true} 
+                            onCheckedChange={async (checked) => {
+                                if (currentUser) {
+                                    const userDoc = members.find(m => m.id === currentUser.id);
+                                    if (userDoc) {
+                                        await updateMember(userDoc.id, { showExpenseOverview: checked });
+                                    }
+                                }
+                            }} 
+                        />
+                    </div>
+                </CardHeader>
+            </Card>
+
+            {/* Mobile Navigation Settings */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline">Navegación Móvil</CardTitle>
+                            <CardDescription className="mt-1.5">Configura la barra inferior en dispositivos móviles.</CardDescription>
+                        </div>
+                        <Switch 
+                            checked={members.find(m => m.id === currentUser?.id)?.showBottomNav ?? true} 
+                            onCheckedChange={async (checked) => {
+                                if (currentUser) {
+                                    const userDoc = members.find(m => m.id === currentUser.id);
+                                    if (userDoc) {
+                                        await updateMember(userDoc.id, { showBottomNav: checked });
+                                    }
+                                }
+                            }} 
+                        />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <Label>Accesos Rápidos (Selecciona hasta 4)</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                { id: '/dashboard', label: 'Panel' },
+                                { id: '/transactions', label: 'Transacciones' },
+                                { id: '/accounts', label: 'Cuentas' },
+                                { id: '/budgets', label: 'Presupuestos' },
+                                { id: '/goals', label: 'Metas' },
+                                { id: '/debts', label: 'Deudas' },
+                                { id: '/settings', label: 'Ajustes' },
+                            ].map(option => {
+                                const userDoc = members.find(m => m.id === currentUser?.id);
+                                const selectedItems = userDoc?.bottomNavItems || ['/dashboard', '/transactions', '/accounts', '/budgets'];
+                                const isSelected = selectedItems.includes(option.id);
+                                
+                                return (
+                                    <div key={option.id} className="flex items-center space-x-2 border rounded-md p-2 hover:bg-muted/50 cursor-pointer" onClick={async () => {
+                                        if (!currentUser || !userDoc) return;
+                                        
+                                        let newItems = [...selectedItems];
+                                        if (isSelected) {
+                                            newItems = newItems.filter(item => item !== option.id);
+                                        } else {
+                                            if (newItems.length < 4) {
+                                                newItems.push(option.id);
+                                            } else {
+                                                alert("Solo puedes seleccionar un máximo de 4 opciones para la barra inferior.");
+                                                return;
+                                            }
+                                        }
+                                        await updateMember(userDoc.id, { bottomNavItems: newItems });
+                                    }}>
+                                        <div className={cn(
+                                            "w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors",
+                                            isSelected ? "border-primary bg-primary" : "border-muted-foreground"
+                                        )}>
+                                            {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                                        </div>
+                                        <span className="text-sm font-medium">{option.label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Family Management */}
             <Card>
                 <CardHeader>

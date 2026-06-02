@@ -46,7 +46,6 @@ export function useTransactionsPage() {
     } else {
         await addTransaction(transaction);
     }
-    clearFilters();
     setEditingTransaction(undefined);
     setIsSubmitting(false);
   };

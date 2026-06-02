@@ -5,10 +5,10 @@ import React, { createContext, useContext, ReactNode, useState, useEffect, useCa
 import { getFirestoreDb } from '@/lib/firebase/config';
 import { collection, addDoc as fbAddDoc, updateDoc as fbUpdateDoc, deleteDoc as fbDeleteDoc, doc, getDocs, query, where, Timestamp, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { useAuth } from './auth-context';
-import type { FamilyData, Transaction, Category, Budget, SavingsGoal, Account, CreditCard, Loan, User } from '@/lib/types';
+import type { FamilyData, Transaction, Category, Budget, SavingsGoal, Account, CreditCard, Loan, User, FamilySettings } from '@/lib/types';
 import { users as defaultUsers } from '@/lib/data';
 import { seedDefaultCategories } from '@/lib/services/seed-service';
-import { processRecurringTransactions } from '@/lib/services/recurring-service';
+import { processRecurringTransactions, processRecurringSavings, processRecurringDeposits } from '@/lib/services/recurring-service';
 import { useToast } from '@/hooks/use-toast';
 
 const FAMILY_ID = 'main-family';
@@ -28,9 +28,9 @@ const getUniqueCategories = (categories: Category[]): Category[] => {
 interface FamilyDataContextType {
   familyData: FamilyData | null;
   loading: boolean;
-  addDoc: (collectionName: keyof Omit<FamilyData, 'familyId'>, data: any) => Promise<any>;
-  updateDoc: (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string, data: any) => Promise<void>;
-  deleteDoc: (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string) => Promise<void>;
+  addDoc: (collectionName: keyof Omit<FamilyData, 'familyId' | 'settings'>, data: any) => Promise<any>;
+  updateDoc: (collectionName: keyof Omit<FamilyData, 'familyId' | 'settings'>, id: string, data: any) => Promise<void>;
+  deleteDoc: (collectionName: keyof Omit<FamilyData, 'familyId' | 'settings'>, id: string) => Promise<void>;
   accounts: Account[];
   creditCards: CreditCard[];
   cashBalance: number;
@@ -40,22 +40,25 @@ interface FamilyDataContextType {
   transactions: Transaction[];
   categories: Category[];
   members: User[];
+  settings: FamilySettings | null;
   addMember: (member: Omit<User, 'id'>) => Promise<any>;
   updateMember: (id: string, data: Partial<User>) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
   getAccountBalance: (accountId: string) => number;
+  updateSettings: (data: Partial<FamilySettings>) => Promise<void>;
 }
 
 const FamilyDataContext = createContext<FamilyDataContextType | undefined>(undefined);
 
-const COLLECTIONS_TO_SYNC: (keyof Omit<FamilyData, 'familyId'>)[] = [
+const COLLECTIONS_TO_SYNC: (keyof Omit<FamilyData, 'familyId' | 'settings'>)[] = [
     'transactions', 'categories', 'budgets', 'savingsGoals', 'accounts', 'creditCards', 'loans'
 ];
 
 const MEMBERS_COLLECTION = 'members';
+const SETTINGS_COLLECTION = 'settings';
 
 export function FamilyDataProvider({ children }: { children: ReactNode }) {
-  const { currentUser, loading: authLoading } = useAuth();
+  const { currentUser, firebaseReady } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const recurringCheckHasRun = useRef(false);
@@ -68,15 +71,13 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
   const [creditCardsState, setCreditCardsState] = useState<CreditCard[]>([]);
   const [loansState, setLoansState] = useState<Loan[]>([]);
   const [members, setMembers] = useState<User[]>([]);
+  const [settings, setSettings] = useState<FamilySettings | null>(null);
 
-  // This effect will be the single source of truth for data loading.
+  // This effect is the single source of truth for data loading.
+  // It waits for firebaseReady so Firestore requests are authenticated.
   useEffect(() => {
-    console.log("[FamilyDataContext] Running initialization effect. authLoading:", authLoading, "currentUser:", currentUser);
-    if (authLoading) {
-        return;
-    }
+    if (!firebaseReady) return;
     if (!currentUser) {
-      console.log("[FamilyDataContext] No currentUser, skipping sync.");
       setIsLoading(true);
       setTransactions([]);
       setCategories([]);
@@ -95,34 +96,30 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
 
     // Seed categories as a side-effect, don't block loading
     seedDefaultCategories(FAMILY_ID).catch(error => {
-      console.error("[FamilyDataContext] Error seeding categories:", error);
+      console.error('[FamilyDataContext] Error seeding categories:', error);
     });
 
     const unsubscribers: Unsubscribe[] = [];
 
     const loadStatus: Record<string, boolean> = Object.fromEntries(
-        COLLECTIONS_TO_SYNC.map(name => [name, false])
+        [...COLLECTIONS_TO_SYNC, 'members', 'settings'].map(name => [name, false])
     );
-    
+
     const checkAllLoaded = () => {
-        console.log("[FamilyDataContext] Checking load status:", loadStatus);
         if (Object.values(loadStatus).every(Boolean)) {
-            console.log("[FamilyDataContext] All collections synced successfully! Setting isLoading to false.");
             setIsLoading(false);
         }
     };
 
     const createUnsubscriber = <T extends { id: string }>(
-        collectionName: keyof Omit<FamilyData, 'familyId'>, 
+        collectionName: keyof Omit<FamilyData, 'familyId'>,
         setter: React.Dispatch<React.SetStateAction<T[]>>,
         processor?: (docs: any[]) => T[]
     ) => {
-        console.log(`[FamilyDataContext] Registering onSnapshot for: ${collectionName}`);
-        let q = query(collection(db, collectionName), where("familyId", "==", FAMILY_ID));
+        const q = query(collection(db, collectionName), where('familyId', '==', FAMILY_ID));
         const shouldSortClientSide = collectionName === 'transactions';
-        
+
         return onSnapshot(q, (snapshot) => {
-            console.log(`[FamilyDataContext] onSnapshot received data for: ${collectionName}, doc count:`, snapshot.size);
             let docs = snapshot.docs.map(d => {
                 const data = d.data();
                 Object.keys(data).forEach(key => {
@@ -140,13 +137,13 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
                     return bDate - aDate;
                 });
             }
-            
+
             if (processor) {
                 docs = processor(docs);
             }
-            
+
             setter(docs);
-            
+
             if (!loadStatus[collectionName]) {
                 loadStatus[collectionName] = true;
                 checkAllLoaded();
@@ -169,13 +166,9 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     unsubscribers.push(createUnsubscriber('loans', setLoansState));
 
     // Members collection — seed from data.ts if empty
-    console.log(`[FamilyDataContext] Registering onSnapshot for members`);
     const membersQuery = query(collection(db, MEMBERS_COLLECTION), where('familyId', '==', FAMILY_ID));
     const membersUnsub = onSnapshot(membersQuery, async (snapshot) => {
-      console.log(`[FamilyDataContext] onSnapshot received members data, empty:`, snapshot.empty);
       if (snapshot.empty) {
-        // Seed default users on first run
-        console.log(`[FamilyDataContext] Seeding default members...`);
         for (const u of defaultUsers) {
           await fbAddDoc(collection(db, MEMBERS_COLLECTION), { ...u, familyId: FAMILY_ID });
         }
@@ -183,16 +176,54 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
         const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as User));
         setMembers(docs);
       }
+      if (!loadStatus['members']) {
+        loadStatus['members'] = true;
+        checkAllLoaded();
+      }
     }, (error) => {
       console.error('[FamilyDataContext] Error fetching members:', error);
+      if (!loadStatus['members']) {
+        loadStatus['members'] = true;
+        checkAllLoaded();
+      }
     });
     unsubscribers.push(membersUnsub);
 
+    // Settings collection
+    const settingsQuery = query(collection(db, SETTINGS_COLLECTION), where('familyId', '==', FAMILY_ID));
+    const settingsUnsub = onSnapshot(settingsQuery, async (snapshot) => {
+      if (snapshot.empty) {
+        const initialSettings = { familyId: FAMILY_ID, initialCashBalance: 0 };
+        const docRef = await fbAddDoc(collection(db, SETTINGS_COLLECTION), initialSettings);
+        setSettings({ id: docRef.id, ...initialSettings });
+      } else {
+        const docData = snapshot.docs[0];
+        setSettings({ id: docData.id, ...docData.data() } as FamilySettings);
+      }
+      if (!loadStatus['settings']) {
+        loadStatus['settings'] = true;
+        checkAllLoaded();
+      }
+    }, (error) => {
+      console.error('[FamilyDataContext] Error fetching settings:', error);
+      if (!loadStatus['settings']) {
+        loadStatus['settings'] = true;
+        checkAllLoaded();
+      }
+    });
+    unsubscribers.push(settingsUnsub);
+
     return () => {
-      console.log("[FamilyDataContext] Cleaning up initialization effect unsubscribers.");
       unsubscribers.forEach(unsub => unsub());
     };
-  }, [currentUser, authLoading]);
+  }, [currentUser, firebaseReady]);
+
+  const updateSettings = useCallback(async (data: Partial<FamilySettings>) => {
+    if (!settings?.id) return;
+    const db = getFirestoreDb();
+    const docRef = doc(db, SETTINGS_COLLECTION, settings.id);
+    await fbUpdateDoc(docRef, data);
+  }, [settings]);
 
   const addDocWithFamilyId = useCallback(async (collectionName: keyof FamilyData, data: any) => {
     if (!currentUser) throw new Error("User not authenticated");
@@ -229,29 +260,56 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
   }, [updateDocById]);
   
   useEffect(() => {
-    if (isLoading || authLoading || !currentUser || recurringCheckHasRun.current) {
+    if (isLoading || !firebaseReady || !currentUser || recurringCheckHasRun.current) {
         return;
     }
     
     const runRecurringCheck = async () => {
         recurringCheckHasRun.current = true;
-        const updatesMade = await processRecurringTransactions(
-            transactions,
-            addRecurringTransaction,
-            updateRecurringTransaction
-        );
 
-        if (updatesMade) {
+        const [transactionsUpdated, savingsUpdated, depositsUpdated] = await Promise.all([
+            processRecurringTransactions(
+                transactions,
+                addRecurringTransaction,
+                updateRecurringTransaction
+            ),
+            processRecurringSavings(
+                goals,
+                addRecurringTransaction,
+                (id, data) => updateDocById('savingsGoals', id, data)
+            ),
+            processRecurringDeposits(
+                accounts,
+                addRecurringTransaction,
+                (id, data) => updateDocById('accounts', id, data)
+            ),
+        ]);
+
+        if (transactionsUpdated) {
             toast({
                 title: 'Transacciones Recurrentes Generadas',
                 description: 'Se han creado nuevas transacciones basadas en sus plantillas recurrentes.',
+            });
+        }
+
+        if (savingsUpdated) {
+            toast({
+                title: '💰 Aportes de Ahorro Registrados',
+                description: 'Se han procesado aportes automáticos a tus metas de ahorro.',
+            });
+        }
+
+        if (depositsUpdated) {
+            toast({
+                title: '🔄 Aportes Recurrentes',
+                description: 'Se han procesado tus aportes recurrentes a cuentas.',
             });
         }
     };
     
     runRecurringCheck();
 
-  }, [isLoading, authLoading, currentUser, transactions, addRecurringTransaction, updateRecurringTransaction, toast]);
+  }, [isLoading, firebaseReady, currentUser, transactions, goals, accounts, addRecurringTransaction, updateRecurringTransaction, updateDocById, toast]);
 
 
   const transactionsByAccountId = useMemo(() => {
@@ -279,7 +337,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
   }, [accounts, transactionsByAccountId]);
 
   const cashBalance = useMemo(() => {
-    let balance = 0;
+    let balance = settings?.initialCashBalance || 0;
     for (const t of transactions) {
       if (t.paymentMethod === 'Efectivo') {
         if (t.type === 'income') {
@@ -290,7 +348,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
       }
     }
     return balance;
-  }, [transactions]);
+  }, [transactions, settings?.initialCashBalance]);
 
   const creditCards = useMemo(() => {
     return creditCardsState.map(card => {
@@ -341,9 +399,11 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     await fbDeleteDoc(doc(db, MEMBERS_COLLECTION, id));
   }, []);
 
-  const value: FamilyDataContextType = {
+
+
+  const value = useMemo<FamilyDataContextType>(() => ({
     familyData,
-    loading: authLoading || isLoading,
+    loading: !firebaseReady || isLoading,
     addDoc: addDocWithFamilyId,
     updateDoc: updateDocById,
     deleteDoc: deleteDocById,
@@ -356,11 +416,35 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     transactions,
     categories,
     members,
+    settings,
     addMember,
     updateMember,
     deleteMember,
     getAccountBalance,
-  };
+    updateSettings,
+  }), [
+    familyData,
+    firebaseReady,
+    isLoading,
+    addDocWithFamilyId,
+    updateDocById,
+    deleteDocById,
+    accounts,
+    creditCards,
+    cashBalance,
+    budgets,
+    goals,
+    loans,
+    transactions,
+    categories,
+    members,
+    settings,
+    addMember,
+    updateMember,
+    deleteMember,
+    getAccountBalance,
+    updateSettings,
+  ]);
 
   return (
     <FamilyDataContext.Provider value={value}>

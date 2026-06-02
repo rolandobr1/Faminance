@@ -10,32 +10,27 @@ import { AddTransactionSheet } from "../transactions/add-transaction-sheet";
 import { cn } from "@/lib/utils";
 import { addDays, subMonths, differenceInDays, parseISO } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 export function PaymentReminders() {
-    const { loans, creditCards, transactions, addDoc } = useFamilyData();
+    const { loans, creditCards, transactions, addDoc, settings, updateSettings } = useFamilyData();
     const [selectedPayment, setSelectedPayment] = useState<OverduePayment | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [today, setToday] = useState<Date | null>(null);
-    const [reminderDays, setReminderDays] = useState<number>(7);
     const [showConfig, setShowConfig] = useState(false);
+
+    const reminderDays = settings?.reminderDays ?? 7;
 
     useEffect(() => {
         setIsClient(true);
         const date = new Date();
         date.setHours(0, 0, 0, 0);
         setToday(date);
-
-        // Load saved preference from localStorage if available
-        const savedDays = localStorage.getItem('faminance-reminder-days');
-        if (savedDays) {
-            setReminderDays(Number(savedDays));
-        }
     }, []);
 
     const handleDaysChange = (value: string) => {
         const days = Number(value);
-        setReminderDays(days);
-        localStorage.setItem('faminance-reminder-days', value);
+        updateSettings({ reminderDays: days });
     };
 
     const overduePayments = useMemo(() => {
@@ -134,6 +129,10 @@ export function PaymentReminders() {
     
     const handleSaveTransaction = (transaction: Omit<Transaction, 'id' | 'user' | 'familyId'>) => {
         addDoc('transactions', transaction);
+        toast({
+            title: "Pago registrado",
+            description: `Se ha registrado el pago de ${transaction.amount.toLocaleString(transaction.currency === 'USD' ? 'en-US' : 'es-DO', { style: 'currency', currency: transaction.currency })}.`,
+        });
         setSelectedPayment(null);
     };
 
@@ -145,14 +144,14 @@ export function PaymentReminders() {
         <>
             <section className="space-y-3 w-full">
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                         <Clock className="h-4 w-4 text-primary" />
                         Recordatorios de Pagos
                     </h3>
                     <div className="flex items-center gap-2">
                         {showConfig && (
                             <Select value={String(reminderDays)} onValueChange={handleDaysChange}>
-                                <SelectTrigger className="h-7 text-xs w-[140px] bg-[#0d121f]/60 border-white/[0.08]">
+                                <SelectTrigger className="h-7 text-xs w-[140px] bg-background/60 border-border">
                                     <SelectValue placeholder="Días de aviso" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -166,7 +165,7 @@ export function PaymentReminders() {
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-7 w-7 text-slate-400 hover:text-white"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             onClick={() => setShowConfig(!showConfig)}
                         >
                             <Settings2 className="h-4 w-4" />
@@ -197,7 +196,7 @@ export function PaymentReminders() {
                             <Card 
                                 key={`${payment.id}-${payment.currency}-${index}`} 
                                 className={cn(
-                                    "border-l-4 bg-[#0d121f]/30 border-t-white/[0.03] border-r-white/[0.03] border-b-white/[0.03] backdrop-blur-md shadow-md",
+                                    "border-l-4 bg-card/40 border-border backdrop-blur-md shadow-md",
                                     cardColorClass
                                 )}
                             >
@@ -205,16 +204,16 @@ export function PaymentReminders() {
                                     <div className="flex items-center gap-3">
                                         <AlertTriangle className={cn("h-6 w-6 shrink-0", textColorClass)} />
                                         <div>
-                                            <p className="font-bold font-headline text-slate-200">
-                                                <span className="text-xs font-semibold uppercase mr-2 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                                            <p className="font-bold font-headline text-foreground">
+                                                <span className="text-xs font-semibold uppercase mr-2 px-1.5 py-0.5 rounded bg-muted border border-border">
                                                     {badgeText}
                                                 </span>
                                                 {payment.name}
                                             </p>
-                                            <p className="text-xs text-slate-400 mt-1">
+                                            <p className="text-xs text-muted-foreground mt-1">
                                                 Fecha límite: {payment.dueDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                                                 {' - '}
-                                                <span className="font-semibold text-slate-300">
+                                                <span className="font-semibold text-foreground">
                                                     {payment.amount.toLocaleString(payment.currency === 'USD' ? 'en-US' : 'es-DO', { style: 'currency', currency: payment.currency })}
                                                 </span>
                                             </p>
@@ -232,7 +231,7 @@ export function PaymentReminders() {
                         )
                     })
                 ) : (
-                    <div className="text-center py-6 text-xs text-slate-500 border border-dashed border-white/[0.08] rounded-xl bg-[#0d121f]/10">
+                    <div className="text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-xl bg-muted/10">
                         No hay pagos vencidos o próximos en el período configurado.
                     </div>
                 )}

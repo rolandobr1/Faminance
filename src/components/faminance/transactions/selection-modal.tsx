@@ -90,46 +90,46 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                 <Button 
                     type="button"
                     variant="outline" 
-                    className="w-full justify-start text-left h-auto py-2 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors"
+                    className="w-full justify-start text-left h-auto py-2 bg-muted/20 border-border/50 hover:bg-muted/50 hover:border-border transition-colors"
                     disabled={disabled}
                 >
                     <div className="flex items-center gap-3 w-full min-w-0">
                          {TriggerIcon && (
-                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                                <TriggerIcon className="h-4 w-4 text-slate-200" />
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
+                                <TriggerIcon className="h-4 w-4 text-foreground" />
                             </div>
                         )}
                         <div className="flex-grow min-w-0 overflow-hidden text-left">
-                            <p className="text-xs text-slate-500 truncate">{title}</p>
-                            <p className="font-semibold truncate text-slate-200">{selected?.label || `Seleccionar`}</p>
+                            <p className="text-xs text-muted-foreground truncate">{title}</p>
+                            <p className="font-semibold truncate text-foreground">{selected?.label || `Seleccionar`}</p>
                         </div>
-                        <ChevronDown className="h-4 w-4 text-slate-500 ml-auto flex-shrink-0" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto flex-shrink-0" />
                     </div>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-md bg-[#0d121f] border-white/10 text-slate-200 p-0 overflow-hidden flex flex-col max-h-[85vh]">
-                <div className="p-4 border-b border-white/10 bg-[#111827]">
+            <DialogContent className="max-w-[95vw] sm:max-w-md glass-card text-foreground p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="p-4 border-b border-border/50 glass-header">
                     <DialogHeader className="mb-4">
-                        <DialogTitle className="text-lg text-white">Seleccionar {title}</DialogTitle>
+                        <DialogTitle className="text-lg text-foreground">Seleccionar {title}</DialogTitle>
                         <DialogDescription className="sr-only">
                             Elija una de las siguientes opciones.
                         </DialogDescription>
                     </DialogHeader>
                     
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
                             placeholder="Buscar..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-primary/50"
+                            className="pl-9 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
                         />
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0 overscroll-contain">
                     {filteredOptions.length === 0 && (
-                        <div className="py-8 text-center text-slate-500 text-sm">
+                        <div className="py-8 text-center text-muted-foreground text-sm">
                             No se encontraron resultados.
                         </div>
                     )}
@@ -145,7 +145,7 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                         variant="ghost"
                                         onClick={() => handleSelect(option)}
                                         className={cn(
-                                            "w-full justify-start h-auto py-3 px-4 hover:bg-white/5",
+                                            "w-full justify-start h-auto py-3 px-4 hover:bg-muted/50",
                                             option.disabled && "opacity-50 cursor-not-allowed",
                                             selected?.value === option.value && "bg-primary/10 text-primary hover:bg-primary/20"
                                         )}
@@ -154,8 +154,8 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                         <div className="flex items-center gap-3">
                                             {Icon && <div 
                                                 className={cn(
-                                                    "h-8 w-8 rounded-full flex items-center justify-center border border-white/5 flex-shrink-0",
-                                                    option.disabled ? "bg-white/5" : selected?.value === option.value ? "bg-primary/20 text-primary" : "bg-white/10 text-slate-300"
+                                                    "h-8 w-8 rounded-full flex items-center justify-center border border-border/50 flex-shrink-0",
+                                                    option.disabled ? "bg-muted/50" : selected?.value === option.value ? "bg-primary/20 text-primary" : "bg-muted text-foreground"
                                                 )}
                                             >
                                                 <Icon className="h-4 w-4" />
@@ -179,7 +179,7 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                                 variant="ghost"
                                                 onClick={() => handleSelect(group.parent)}
                                                 className={cn(
-                                                    "w-full justify-start h-auto py-2.5 px-3 hover:bg-white/5",
+                                                    "w-full justify-start h-auto py-2.5 px-3 hover:bg-muted/50",
                                                     group.parent.disabled && "opacity-50 cursor-not-allowed",
                                                     selected?.value === group.parent.value && "bg-primary/10 text-primary hover:bg-primary/20"
                                                 )}
@@ -187,8 +187,8 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                             >
                                                 <div className="flex items-center gap-3">
                                                     {ParentIcon && <div className={cn(
-                                                        "h-8 w-8 rounded-full flex items-center justify-center border border-white/5 flex-shrink-0",
-                                                        selected?.value === group.parent.value ? "bg-primary/20 text-primary" : "bg-white/10 text-slate-300"
+                                                        "h-8 w-8 rounded-full flex items-center justify-center border border-border/50 flex-shrink-0",
+                                                        selected?.value === group.parent.value ? "bg-primary/20 text-primary" : "bg-muted text-foreground"
                                                     )}>
                                                         <ParentIcon className="h-4 w-4" />
                                                     </div>}
@@ -209,21 +209,24 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                                             variant="ghost"
                                                             onClick={() => handleSelect(child)}
                                                             className={cn(
-                                                                "w-full justify-start h-auto py-2 px-3 hover:bg-white/5 relative",
+                                                                "w-full justify-start h-auto py-2 px-3 hover:bg-muted/50",
                                                                 child.disabled && "opacity-50 cursor-not-allowed",
                                                                 selected?.value === child.value && "bg-primary/10 text-primary hover:bg-primary/20"
                                                             )}
                                                             disabled={child.disabled}
                                                         >
-                                                            <div className="absolute left-[-16px] top-1/2 w-3 h-px bg-white/10" />
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-3 w-full">
+                                                                {/* Visual tree line indicator */}
+                                                                <div className="w-4 flex justify-center ml-2">
+                                                                    <div className="w-full h-px bg-border/50" />
+                                                                </div>
                                                                 {ChildIcon && <div className={cn(
-                                                                    "h-6 w-6 rounded-md flex items-center justify-center border border-white/5 flex-shrink-0",
-                                                                    selected?.value === child.value ? "bg-primary/20 text-primary" : "bg-white/5 text-slate-400"
+                                                                    "h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0",
+                                                                    selected?.value === child.value ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"
                                                                 )}>
                                                                     <ChildIcon className="h-3 w-3" />
                                                                 </div>}
-                                                                <span className="text-sm text-slate-300 truncate flex-1 text-left">{child.label}</span>
+                                                                <span className="text-sm font-medium truncate flex-1 text-left">{child.label}</span>
                                                             </div>
                                                         </Button>
                                                     );
@@ -236,8 +239,8 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                             
                             {/* Orphans */}
                             {groupedOptions.orphans && groupedOptions.orphans.length > 0 && (
-                                <div className="space-y-1 pt-2 border-t border-white/5">
-                                    <div className="px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">Otros Resultados</div>
+                                <div className="space-y-1 pt-2 border-t border-border/50">
+                                    <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Otros Resultados</div>
                                     {groupedOptions.orphans.map(orphan => {
                                         const Icon = iconMap[orphan.icon];
                                         return (
@@ -247,12 +250,12 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
                                                 variant="ghost"
                                                 onClick={() => handleSelect(orphan)}
                                                 className={cn(
-                                                    "w-full justify-start h-auto py-2 px-4 hover:bg-white/5",
+                                                    "w-full justify-start h-auto py-2 px-4 hover:bg-accent",
                                                     selected?.value === orphan.value && "bg-primary/10 text-primary hover:bg-primary/20"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    {Icon && <div className="h-8 w-8 rounded-full flex items-center justify-center bg-white/10 text-slate-300">
+                                                    {Icon && <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary">
                                                         <Icon className="h-4 w-4" />
                                                     </div>}
                                                     <span className="text-sm">{orphan.label}</span>
