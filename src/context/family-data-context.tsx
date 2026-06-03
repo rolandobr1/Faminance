@@ -235,21 +235,39 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     }
 
     const db = getFirestoreDb();
-    const docRef = await fbAddDoc(collection(db, collectionName), dataToAdd);
-    return docRef;
-  }, [currentUser]);
+    try {
+      const docRef = await fbAddDoc(collection(db, collectionName), dataToAdd);
+      return docRef;
+    } catch (error) {
+      console.error(`[FamilyDataContext] Error adding to ${collectionName}:`, error);
+      toast({ title: 'Error al guardar', description: 'No se pudo guardar el registro. Intenta de nuevo.', variant: 'destructive' });
+      throw error;
+    }
+  }, [currentUser, toast]);
 
   const updateDocById = useCallback(async (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string, data: any) => {
     const db = getFirestoreDb();
     const docRef = doc(db, collectionName, id);
-    await fbUpdateDoc(docRef, data);
-  }, []);
+    try {
+      await fbUpdateDoc(docRef, data);
+    } catch (error) {
+      console.error(`[FamilyDataContext] Error updating ${collectionName}/${id}:`, error);
+      toast({ title: 'Error al actualizar', description: 'No se pudo actualizar el registro. Intenta de nuevo.', variant: 'destructive' });
+      throw error;
+    }
+  }, [toast]);
   
   const deleteDocById = useCallback(async (collectionName: keyof Omit<FamilyData, 'familyId'>, id: string) => {
     const db = getFirestoreDb();
     const docRef = doc(db, collectionName, id);
-    await fbDeleteDoc(docRef);
-  }, []);
+    try {
+      await fbDeleteDoc(docRef);
+    } catch (error) {
+      console.error(`[FamilyDataContext] Error deleting ${collectionName}/${id}:`, error);
+      toast({ title: 'Error al eliminar', description: 'No se pudo eliminar el registro. Intenta de nuevo.', variant: 'destructive' });
+      throw error;
+    }
+  }, [toast]);
 
   const addRecurringTransaction = useCallback((transactionData: Omit<Transaction, 'id' | 'user' | 'familyId'>) => {
       return addDocWithFamilyId('transactions', transactionData);

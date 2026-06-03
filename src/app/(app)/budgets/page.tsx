@@ -136,7 +136,7 @@ function BudgetCard({
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>¿Eliminar presupuesto?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto para "{budget.categoryInfo?.label}".
+                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente el presupuesto para &quot;{budget.categoryInfo?.label}&quot;.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -192,7 +192,7 @@ function BudgetCard({
 
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Transacciones en "{budget.categoryInfo?.label}"</DialogTitle>
+                    <DialogTitle>Transacciones en &quot;{budget.categoryInfo?.label}&quot;</DialogTitle>
                     <DialogDescription>
                         Aquí están todas las transacciones para la categoría del presupuesto seleccionado.
                     </DialogDescription>

@@ -376,7 +376,7 @@ export default function DebtsPage() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el préstamo "{loan.name}".
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el préstamo &quot;{loan.name}&quot;.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>

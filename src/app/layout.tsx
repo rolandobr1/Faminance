@@ -28,6 +28,30 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+        {/* Register Service Worker */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js')
+                .then(function(reg) {
+                  // Force the waiting SW to activate immediately
+                  if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+                  reg.addEventListener('updatefound', function() {
+                    var newSW = reg.installing;
+                    if (newSW) {
+                      newSW.addEventListener('statechange', function() {
+                        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                          // New content available – reload to get fresh assets
+                          window.location.reload();
+                        }
+                      });
+                    }
+                  });
+                })
+                .catch(function(err) { console.warn('[SW] Registration failed:', err); });
+            });
+          }
+        ` }} />
       </head>
       <body className={cn(
         "min-h-screen bg-background font-body antialiased",

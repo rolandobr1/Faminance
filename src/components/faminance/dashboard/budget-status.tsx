@@ -171,7 +171,7 @@ export function BudgetStatus() {
                             </DialogTrigger>
                              <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>Transacciones en "{budget.categoryInfo?.label}"</DialogTitle>
+                                  <DialogTitle>Transacciones en &quot;{budget.categoryInfo?.label}&quot;</DialogTitle>
                                   <DialogDescription>
                                       Aquí están todas las transacciones para la categoría del presupuesto seleccionado.
                                   </DialogDescription>

@@ -298,7 +298,7 @@ export default function TransactionsPage() {
                     </div>
                     <CardTitle className="text-base font-semibold font-headline">No hay gastos compartidos</CardTitle>
                     <CardDescription className="max-w-xs mt-1">
-                      Las transacciones marcadas como "Gasto Compartido" se mostrarán aquí con la división de montos por persona.
+                      Las transacciones marcadas como &quot;Gasto Compartido&quot; se mostrarán aquí con la división de montos por persona.
                     </CardDescription>
                   </CardContent>
                 </Card>

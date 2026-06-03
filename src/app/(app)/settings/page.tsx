@@ -106,7 +106,7 @@ function CategoryList({
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría "{rootCategory.label}".
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría &quot;{rootCategory.label}&quot;.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
@@ -154,7 +154,7 @@ function CategoryList({
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                                         <AlertDialogDescription>
-                                                                            Eliminará la subcategoría "{sub.label}".
+                                                                            Eliminará la subcategoría &quot;{sub.label}&quot;.
                                                                         </AlertDialogDescription>
                                                                     </AlertDialogHeader>
                                                                     <AlertDialogFooter>

@@ -205,7 +205,7 @@ export default function AccountsPage() {
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                                 <AlertDialogDescription>
-                                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la cuenta "{account.name}".
+                                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la cuenta &quot;{account.name}&quot;.
                                                                  </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
@@ -350,7 +350,7 @@ export default function AccountsPage() {
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente la tarjeta "{card.name}".
+                                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente la tarjeta &quot;{card.name}&quot;.
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>

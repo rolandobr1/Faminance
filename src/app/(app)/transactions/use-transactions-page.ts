@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import type { Transaction } from "@/lib/types";
 import { useFamilyData } from "@/context/family-data-context";
 import { addDays, format, parseISO, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from "date-fns";
@@ -20,6 +20,12 @@ export function useTransactionsPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [activePreset, setActivePreset] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | null>('thisMonth');
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setSearchQueryDebounced = useCallback((value: string) => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearchQuery(value), 300);
+  }, []);
 
   useEffect(() => {
     setDate({
@@ -121,7 +127,7 @@ export function useTransactionsPage() {
           totalSavings: savings,
           isSummaryExpanded,
       };
-  }, [filteredTransactions, budgets]);
+  }, [filteredTransactions, budgets, categories, isSummaryExpanded]);
 
   const { totalSharedDOP, totalSharedUSD } = useMemo(() => {
     const shared = filteredTransactions.filter(t => t.isShared && t.type === 'expense');
@@ -278,5 +284,6 @@ export function useTransactionsPage() {
     members,
     totalSharedDOP,
     totalSharedUSD,
+    setSearchQueryDebounced,
   };
 }

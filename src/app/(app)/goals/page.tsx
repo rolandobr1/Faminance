@@ -286,7 +286,7 @@ function GoalCard({ goal, account, onEdit }: { goal: SavingsGoal, account?: Acco
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Esta acción no se puede deshacer. Esto eliminará permanentemente la meta "{goal.name}".
+                                                Esta acción no se puede deshacer. Esto eliminará permanentemente la meta &quot;{goal.name}&quot;.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>

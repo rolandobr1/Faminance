@@ -286,7 +286,7 @@ export function CategoryBreakdown({ transactions: filteredTransactions }: { tran
     }}>
         <DialogContent className="max-w-2xl">
             <DialogHeader>
-            <DialogTitle>Transacciones en "{selectedCategory?.name}"</DialogTitle>
+            <DialogTitle>Transacciones en &quot;{selectedCategory?.name}&quot;</DialogTitle>
             <DialogDescription>
                 Aquí están todas las transacciones para la categoría seleccionada.
             </DialogDescription>

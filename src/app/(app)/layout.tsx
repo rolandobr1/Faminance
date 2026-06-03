@@ -11,9 +11,8 @@ import {
   CreditCard,
   Loader2,
   Banknote,
-  MoreHorizontal,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { useAuth } from '@/context/auth-context';
 import { useFamilyData } from '@/context/family-data-context';
@@ -21,7 +20,6 @@ import { useIsClient } from '@/hooks/use-is-client';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserNav } from '@/components/faminance/user-nav';
 import { MobileAddButton } from '@/components/faminance/transactions/mobile-add-button';
 
@@ -108,89 +106,88 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [currentUser, router, isClient]);
   
 
-  if (!isClient || !currentUser) {
-    return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-[#07090e]">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
   return (
     <TooltipProvider>
-    <div className="flex min-h-screen w-full flex-col bg-transparent">
-        {/* Expandable Hover Sidebar */}
-        <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 hover:w-48 transition-all duration-300 ease-in-out flex-col border-r glass-card sm:flex group/sidebar">
-        <nav className="flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">
-            <Link
-            href="/dashboard"
-            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base mb-2 group-hover/sidebar:ml-1 group-hover/sidebar:scale-105 transition-transform"
-            >
-            <PiggyBank className="h-5 w-5" />
-            <span className="sr-only">Faminance</span>
-            </Link>
-            {ALL_NAV_ITEMS.map((item) => (
-                <NavLink 
-                    key={item.href} 
-                    href={item.href} 
-                    icon={item.icon} 
-                    label={item.label}
-                    isActive={pathname.startsWith(item.href)}
-                />
-            ))}
-        </nav>
-        <nav className="mt-auto flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">
-          <div className="group-hover/sidebar:ml-1">
-            <UserNav />
-          </div>
-        </nav>
-        </aside>
-
-        <div className="flex flex-col sm:gap-4 sm:pl-16">
-            <main className="flex-1">
-                {children}
-            </main>
+      {(!isClient || !currentUser) ? (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Cargando..." />
         </div>
-        
-        {/* Mobile Navigation — center elevated + button */}
-        {showBottomNav && (
-            <footer className="fixed inset-x-0 bottom-0 z-30 sm:hidden" style={{ overflow: 'visible' }}>
-                <div className="relative">
-                    {/* Elevated glass + button */}
-                    <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-10">
-                        <MobileAddButton />
-                    </div>
+      ) : (
+        <div className="flex min-h-screen w-full flex-col bg-transparent">
+            {/* Expandable Hover Sidebar */}
+            <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 hover:w-48 transition-all duration-300 ease-in-out flex-col border-r glass-card sm:flex group/sidebar">
+            <nav className="flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">
+                <Link
+                href="/dashboard"
+                aria-label="Ir al panel de Faminance"
+                className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base mb-2 group-hover/sidebar:ml-1 group-hover/sidebar:scale-105 transition-transform"
+                >
+                <PiggyBank className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Faminance</span>
+                </Link>
+                {ALL_NAV_ITEMS.map((item) => (
+                    <NavLink 
+                        key={item.href} 
+                        href={item.href} 
+                        icon={item.icon} 
+                        label={item.label}
+                        isActive={pathname.startsWith(item.href)}
+                    />
+                ))}
+            </nav>
+            <nav className="mt-auto flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">
+              <div className="group-hover/sidebar:ml-1">
+                <UserNav />
+              </div>
+            </nav>
+            </aside>
 
-                    <div className="grid grid-cols-5 h-16 pb-3 glass-header rounded-t-2xl">
-                        {mobileLeftItems.map((item) => (
-                            <MobileNavLink
-                                key={item.href}
-                                href={item.href}
-                                icon={item.icon}
-                                label={item.label}
-                                isActive={pathname.startsWith(item.href)}
-                            />
-                        ))}
-
-                        {/* Center placeholder — space for the elevated button */}
-                        <div className="flex items-end justify-center pb-1">
-                            <span className="text-[9px] font-semibold text-primary/60 tracking-widest uppercase">Añadir</span>
+            <div className="flex flex-col sm:gap-4 sm:pl-16">
+                <main className="flex-1">
+                    {children}
+                </main>
+            </div>
+            
+            {/* Mobile Navigation — center elevated + button */}
+            {showBottomNav && (
+                <footer className="fixed inset-x-0 bottom-0 z-30 sm:hidden" style={{ overflow: 'visible' }}>
+                    <div className="relative">
+                        {/* Elevated glass + button */}
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-10">
+                            <MobileAddButton />
                         </div>
 
-                        {mobileRightItems.map((item) => (
-                            <MobileNavLink
-                                key={item.href}
-                                href={item.href}
-                                icon={item.icon}
-                                label={item.label}
-                                isActive={pathname.startsWith(item.href)}
-                            />
-                        ))}
+                        <div className="grid grid-cols-5 h-16 pb-3 glass-header rounded-t-2xl">
+                            {mobileLeftItems.map((item) => (
+                                <MobileNavLink
+                                    key={item.href}
+                                    href={item.href}
+                                    icon={item.icon}
+                                    label={item.label}
+                                    isActive={pathname.startsWith(item.href)}
+                                />
+                            ))}
+
+                            {/* Center placeholder — space for the elevated button */}
+                            <div className="flex items-end justify-center pb-1">
+                                <span className="text-[9px] font-semibold text-primary/60 tracking-widest uppercase">Añadir</span>
+                            </div>
+
+                            {mobileRightItems.map((item) => (
+                                <MobileNavLink
+                                    key={item.href}
+                                    href={item.href}
+                                    icon={item.icon}
+                                    label={item.label}
+                                    isActive={pathname.startsWith(item.href)}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </footer>
-        )}
-    </div>
+                </footer>
+            )}
+        </div>
+      )}
     </TooltipProvider>
   );
 }
