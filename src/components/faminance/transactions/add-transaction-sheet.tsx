@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, ArrowDownUp, Receipt, Loader2, TrendingUp, TrendingDown, CalendarIcon, AlignLeft, RefreshCw, Users, Sparkles } from "lucide-react";
+import { Upload, ArrowDownUp, Receipt, Loader2, TrendingUp, TrendingDown, CalendarIcon, AlignLeft, RefreshCw, Users, Sparkles, ArrowRightLeft, CreditCard as CreditCardIcon, Banknote } from "lucide-react";
 import { iconMap } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Transaction, Category, CreditCard, Account } from '@/lib/types';
 import { SelectionModal, type SelectionOption } from "./selection-modal";
@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFamilyData } from "@/context/family-data-context";
-import { getNextDueDate } from "@/lib/services/recurring-service";
+import { getNextDueDate, getAlignedRecurringDate } from "@/lib/services/recurring-service";
 import { uploadReceipt } from "@/lib/firebase/storage";
 
 
@@ -58,18 +58,21 @@ export function AddTransactionSheet({
     defaultCurrency,
     isSubmitting = false,
 }: AddTransactionSheetProps) {
-    const { creditCards, accounts, categories, members } = useFamilyData();
+    const { creditCards, accounts, categories, members, loans } = useFamilyData();
     const { toast } = useToast();
     const isMobile = useIsMobile();
     
     // Form state
+    const amountInputRef = useRef<HTMLInputElement>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [isShared, setIsShared] = useState(false);
     const [isRecurring, setIsRecurring] = useState(false);
+    const [recurringDay, setRecurringDay] = useState<number | undefined>();
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [transactionType, setTransactionType] = useState<Transaction['type'] | undefined>(transactionToEdit?.type || (defaultType ?? undefined));
+    const [paymentTarget, setPaymentTarget] = useState<'card' | 'loan'>('card');
     const [selectedCategory, setSelectedCategory] = useState<SelectionOption | undefined>();
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<SelectionOption | undefined>();
     const [selectedCard, setSelectedCard] = useState<CreditCard | undefined>();
@@ -109,13 +112,20 @@ export function AddTransactionSheet({
         }
     };
 
-     const paymentMethodOptions: SelectionOption[] = useMemo(() => [
-        { value: 'Pago de Tarjeta', label: 'Pago de Tarjeta', icon: 'CreditCard', disabled: creditCards.length === 0 },
-        { value: 'Tarjeta de Crédito', label: 'Tarjeta de Crédito', icon: 'CreditCard', disabled: creditCards.length === 0 || transactionType === 'income' },
-        { value: 'Tarjeta de Débito', label: 'Tarjeta de Débito', icon: 'Landmark', disabled: accounts.length === 0 },
-        { value: 'Transferencia Bancaria', label: 'Transferencia', icon: 'ArrowDownUp', disabled: accounts.length === 0 },
-        { value: 'Efectivo', label: 'Efectivo', icon: 'HandCoins' },
-    ], [creditCards.length, accounts.length, transactionType]);
+     const paymentMethodOptions: SelectionOption[] = useMemo(() => {
+        const methods = [
+            { value: 'Tarjeta de Débito', label: 'Tarjeta de Débito', icon: 'Landmark', disabled: accounts.length === 0 },
+            { value: 'Transferencia Bancaria', label: 'Transferencia', icon: 'ArrowDownUp', disabled: accounts.length === 0 },
+            { value: 'Efectivo', label: 'Efectivo', icon: 'HandCoins' },
+        ];
+        if (transactionType !== 'payment') {
+            methods.unshift(
+                { value: 'Pago de Tarjeta', label: 'Pago de Tarjeta', icon: 'CreditCard', disabled: creditCards.length === 0 },
+                { value: 'Tarjeta de Crédito', label: 'Tarjeta de Crédito', icon: 'CreditCard', disabled: creditCards.length === 0 || transactionType === 'income' }
+            );
+        }
+        return methods;
+    }, [creditCards.length, accounts.length, transactionType]);
 
 
     useEffect(() => {
@@ -137,7 +147,11 @@ export function AddTransactionSheet({
         const typeToSet = transactionToEdit?.type || defaultType || 'expense';
         setTransactionType(typeToSet);
 
-        const categoryValue = transactionToEdit?.category || defaultCategoryValue || (typeToSet === 'expense' ? 'other-expense' : 'other-income');
+        const categoryValue = transactionToEdit?.category || defaultCategoryValue || (typeToSet === 'expense' ? 'other-expense' : (typeToSet === 'income' ? 'other-income' : 'credit-card-payment'));
+        if (typeToSet === 'payment') {
+            setPaymentTarget(categoryValue === 'debt-payment' ? 'loan' : 'card');
+        }
+        
         const category = categoryValue ? categories.find(c => c.value === categoryValue) : undefined;
         if (category) {
             setSelectedCategory({ value: category.value, label: category.label, icon: category.icon });
@@ -170,8 +184,8 @@ export function AddTransactionSheet({
         setDescription(transactionToEdit?.description || '');
         setLoanId(transactionToEdit?.loanId || defaultLoanId);
 
-        setIsShared(transactionToEdit?.isShared || false);
         setIsRecurring(transactionToEdit?.isRecurring || false);
+        setRecurringDay(transactionToEdit?.recurringDay || undefined);
         setReceiptFile(null);
         setReceiptPreview(transactionToEdit?.receiptUrl || null);
 
@@ -222,6 +236,12 @@ export function AddTransactionSheet({
         icon: 'Landmark'
     }));
 
+     const loanOptions: SelectionOption[] = loans.map(loan => ({
+        value: loan.id,
+        label: `${loan.name} (${loan.monthlyPayment.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })})`,
+        icon: 'Banknote'
+     }));
+
      const categoryOptions: SelectionOption[] = filteredCategories.map(cat => ({
         value: cat.value,
         label: cat.label,
@@ -247,7 +267,16 @@ export function AddTransactionSheet({
         const formData = new FormData(event.currentTarget);
         const sharedWith = isShared ? members.filter(member => formData.get(`user-${member.id}`)).map(m => m.id) : [];
         
-        if (!transactionType || !selectedCategory || !selectedPaymentMethod || !numericAmount || !date) {
+        let finalCategory = selectedCategory;
+        if (transactionType === 'payment') {
+            const catVal = paymentTarget === 'loan' ? 'debt-payment' : 'credit-card-payment';
+            const cat = categories.find(c => c.value === catVal);
+            if (cat) {
+                finalCategory = { value: cat.value, label: cat.label, icon: cat.icon };
+            }
+        }
+
+        if (!transactionType || !finalCategory || !selectedPaymentMethod || !numericAmount || !date) {
             toast({
                 title: "Campos incompletos",
                 description: "Por favor, complete todos los campos obligatorios.",
@@ -261,8 +290,27 @@ export function AddTransactionSheet({
             return;
         }
 
+        if (transactionType === 'payment') {
+            if (paymentTarget === 'card' && !selectedCard) {
+                toast({ title: 'Tarjeta no seleccionada', description: 'Por favor, seleccione la tarjeta de crédito que desea pagar.', variant: 'destructive' });
+                return;
+            }
+            if (paymentTarget === 'loan' && !loanId) {
+                toast({ title: 'Préstamo no seleccionado', description: 'Por favor, seleccione el préstamo que desea pagar.', variant: 'destructive' });
+                return;
+            }
+        }
+
         const frequency = formData.get('frequency') as Transaction['frequency'];
-        const nextDueDate = isRecurring && frequency ? getNextDueDate(date, frequency)?.toISOString() : undefined;
+        const recurringDayVal = isRecurring ? (formData.get('recurringDay') ? Number(formData.get('recurringDay')) : undefined) : undefined;
+
+        let finalDate = date;
+        if (isRecurring && recurringDayVal && (frequency === 'monthly' || frequency === 'bi-weekly' || frequency === 'yearly')) {
+            const aligned = getAlignedRecurringDate(date, recurringDayVal);
+            finalDate = aligned.toISOString().split('T')[0];
+        }
+
+        const nextDueDate = isRecurring && frequency ? getNextDueDate(finalDate, frequency, recurringDayVal)?.toISOString() : undefined;
 
         // Upload receipt if a new file was selected
         let receiptUrl: string | undefined = transactionToEdit?.receiptUrl;
@@ -281,20 +329,21 @@ export function AddTransactionSheet({
         }
 
         const newTransaction: Omit<Transaction, 'id' | 'user' | 'familyId'> = {
-            date: date,
+            date: finalDate,
             description: description,
             amount: numericAmount,
             type: transactionType,
             currency: currency,
-            category: selectedCategory.value,
+            category: finalCategory.value,
             paymentMethod: selectedPaymentMethod.value as Transaction['paymentMethod'],
             isShared,
             sharedWith,
             isRecurring,
             ...(receiptUrl && { receiptUrl }),
-            ...(['Tarjeta de Crédito', 'Pago de Tarjeta'].includes(selectedPaymentMethod.value) && selectedCard?.id && { creditCardId: selectedCard.id }),
-            ...(['Tarjeta de Débito', 'Transferencia Bancaria', 'Pago de Tarjeta'].includes(selectedPaymentMethod?.value || '') && selectedAccount?.id && { accountId: selectedAccount.id }),
+            ...((['Tarjeta de Crédito', 'Pago de Tarjeta'].includes(selectedPaymentMethod.value) || (transactionType === 'payment' && paymentTarget === 'card')) && selectedCard?.id && { creditCardId: selectedCard.id }),
+            ...((['Tarjeta de Débito', 'Transferencia Bancaria', 'Pago de Tarjeta'].includes(selectedPaymentMethod?.value || '') || transactionType === 'payment') && selectedAccount?.id && { accountId: selectedAccount.id }),
             ...(isRecurring && { frequency: frequency }),
+            ...(isRecurring && recurringDayVal !== undefined && { recurringDay: recurringDayVal }),
             ...(nextDueDate && { nextDueDate: nextDueDate }),
         };
 
@@ -328,7 +377,16 @@ export function AddTransactionSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? 'bottom' : 'right'} className="grid grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] bg-background/90 backdrop-blur-3xl border-l-border p-0 sm:max-w-md">
+        <SheetContent 
+            onOpenAutoFocus={(e) => {
+                e.preventDefault();
+                setTimeout(() => {
+                    amountInputRef.current?.focus();
+                }, 150);
+            }}
+            side={isMobile ? 'bottom' : 'right'} 
+            className="grid grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] bg-background/90 backdrop-blur-3xl border-l-border p-0 sm:max-w-md"
+        >
             <SheetHeader className="p-6 pb-4 border-b border-border/50 glass-header relative z-10">
                 <SheetTitle className="font-headline text-2xl tracking-tight text-foreground">
                     {isEditing ? 'Editar Transacción' : 'Nueva Transacción'}
@@ -341,7 +399,7 @@ export function AddTransactionSheet({
                 {/* Background glow */}
                 <div className={cn(
                     "absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[150px] rounded-full blur-[100px] pointer-events-none opacity-20 transition-colors duration-500",
-                    transactionType === 'income' ? 'bg-green-500' : 'bg-red-500'
+                    transactionType === 'income' ? 'bg-green-500' : (transactionType === 'payment' ? 'bg-blue-500' : 'bg-red-500')
                 )} />
 
                 <div className="p-6 space-y-6 relative z-10">
@@ -363,7 +421,7 @@ export function AddTransactionSheet({
                                     }
                                 }}
                                 className={cn(
-                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
+                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden text-xs sm:text-sm", 
                                     transactionType === 'expense' 
                                         ? 'bg-red-500/20 text-red-500 dark:text-red-400 hover:bg-red-500/30' 
                                         : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -390,7 +448,7 @@ export function AddTransactionSheet({
                                     }
                                 }}
                                 className={cn(
-                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden", 
+                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden text-xs sm:text-sm", 
                                     transactionType === 'income' 
                                         ? 'bg-green-500/20 text-green-500 dark:text-green-400 hover:bg-green-500/30' 
                                         : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -398,6 +456,30 @@ export function AddTransactionSheet({
                                 variant="ghost"
                             >
                                 <TrendingUp className="h-4 w-4" /> Ingreso
+                            </Button>
+                            <Button 
+                                type="button" 
+                                onClick={() => {
+                                    setTransactionType('payment');
+                                    const defaultPaymentCat = categories.find(c => c.value === 'credit-card-payment') || categories.find(c => c.value === 'debt-payment');
+                                    if (defaultPaymentCat) {
+                                        setSelectedCategory({ value: defaultPaymentCat.value, label: defaultPaymentCat.label, icon: defaultPaymentCat.icon });
+                                    } else {
+                                        setSelectedCategory(undefined);
+                                    }
+                                    if (selectedPaymentMethod?.value === 'Tarjeta de Crédito') {
+                                        setSelectedPaymentMethod(undefined);
+                                    }
+                                }}
+                                className={cn(
+                                    "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden text-xs sm:text-sm", 
+                                    transactionType === 'payment' 
+                                        ? 'bg-blue-500/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500/30' 
+                                        : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                )}
+                                variant="ghost"
+                            >
+                                <ArrowRightLeft className="h-4 w-4" /> Pago
                             </Button>
                         </div>
                     )}
@@ -407,7 +489,9 @@ export function AddTransactionSheet({
                         "flex flex-col items-center justify-center p-6 rounded-3xl backdrop-blur-md shadow-2xl transition-all duration-500 relative overflow-hidden group border",
                         transactionType === 'income' 
                             ? 'bg-gradient-to-b from-emerald-500/15 to-emerald-500/5 border-emerald-500/25 shadow-emerald-500/10' 
-                            : 'bg-gradient-to-b from-rose-500/15 to-rose-500/5 border-rose-500/25 shadow-rose-500/10'
+                            : (transactionType === 'payment'
+                                ? 'bg-gradient-to-b from-blue-500/15 to-blue-500/5 border-blue-500/25 shadow-blue-500/10'
+                                : 'bg-gradient-to-b from-rose-500/15 to-rose-500/5 border-rose-500/25 shadow-rose-500/10')
                     )}>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
                         <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">Monto</Label>
@@ -424,9 +508,10 @@ export function AddTransactionSheet({
                             
                             <span className={cn(
                                 "text-4xl md:text-5xl font-semibold opacity-90 transition-colors drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]",
-                                transactionType === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                                transactionType === 'income' ? 'text-emerald-400' : (transactionType === 'payment' ? 'text-blue-400' : 'text-rose-400')
                             )}>$</span>
                             <Input
+                                ref={amountInputRef}
                                 id="amount"
                                 name="amount"
                                 type="text"
@@ -434,26 +519,95 @@ export function AddTransactionSheet({
                                 required
                                 value={displayAmount}
                                 onChange={handleAmountChange}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Tab' && !e.shiftKey) {
+                                        const catBtn = document.getElementById('category-select-btn');
+                                        if (catBtn) {
+                                            e.preventDefault();
+                                            catBtn.focus();
+                                        }
+                                    }
+                                }}
                                 className={cn(
                                     "text-5xl md:text-6xl font-bold font-headline border-none bg-transparent h-auto p-0 focus-visible:ring-0 shadow-none w-full max-w-[200px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]",
-                                    transactionType === 'income' ? 'text-emerald-500 dark:text-white placeholder:text-emerald-500/30' : 'text-rose-500 dark:text-white placeholder:text-rose-500/30'
+                                    transactionType === 'income' ? 'text-emerald-500 dark:text-white placeholder:text-emerald-500/30' : (transactionType === 'payment' ? 'text-blue-500 dark:text-white placeholder:text-blue-500/30' : 'text-rose-500 dark:text-white placeholder:text-rose-500/30')
                                 )}
                                 inputMode="decimal"
-                            />
+                             />
                         </div>
                     </div>
 
+                    {transactionType === 'payment' && (
+                        <div className="space-y-2 p-4 rounded-2xl bg-muted/10 border border-border/50">
+                            <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">¿Qué deseas pagar?</Label>
+                            <div className="flex items-center p-1 bg-muted/20 rounded-full border border-border/50 backdrop-blur-sm relative shadow-inner">
+                                <Button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setPaymentTarget('card');
+                                        setLoanId(undefined);
+                                    }}
+                                    className={cn(
+                                        "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden text-xs sm:text-sm", 
+                                        paymentTarget === 'card' 
+                                            ? 'bg-primary/20 text-primary hover:bg-primary/30' 
+                                            : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    )}
+                                    variant="ghost"
+                                >
+                                    <CreditCardIcon className="h-4 w-4" /> Tarjeta de Crédito
+                                </Button>
+                                <Button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setPaymentTarget('loan');
+                                        setSelectedCard(undefined);
+                                    }}
+                                    className={cn(
+                                        "flex-1 rounded-full h-10 transition-all duration-300 gap-2 relative overflow-hidden text-xs sm:text-sm", 
+                                        paymentTarget === 'loan' 
+                                            ? 'bg-primary/20 text-primary hover:bg-primary/30' 
+                                            : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    )}
+                                    variant="ghost"
+                                >
+                                    <Banknote className="h-4 w-4" /> Préstamo
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* SELECTORS GRID */}
                     <div className={cn("grid gap-3", !isSimplified && "grid-cols-2")}>
-                         {!isSimplified && (
+                         {!isSimplified && transactionType !== 'payment' && (
                             <SelectionModal 
+                                id="category-select-btn"
                                 title="Categoría" 
                                 options={categoryOptions} 
                                 selected={selectedCategory} 
                                 onSelect={setSelectedCategory}
                                 disabled={!transactionType}
                             />
-                        )}
+                         )}
+                         {transactionType === 'payment' && (
+                            paymentTarget === 'card' ? (
+                                <SelectionModal 
+                                    id="category-select-btn"
+                                    title="Pagar Tarjeta" 
+                                    options={cardOptions}
+                                    selected={cardOptions.find(c => c.value === selectedCard?.id)}
+                                    onSelect={(option) => setSelectedCard(creditCards.find(c => c.id === option.value))}
+                                />
+                            ) : (
+                                <SelectionModal 
+                                    id="category-select-btn"
+                                    title="Pagar Préstamo" 
+                                    options={loanOptions}
+                                    selected={loanOptions.find(l => l.value === loanId)}
+                                    onSelect={(option) => setLoanId(option.value)}
+                                />
+                            )
+                         )}
                         <SelectionModal 
                             title="Método de Pago" 
                             options={paymentMethodOptions} 
@@ -573,19 +727,37 @@ export function AddTransactionSheet({
                         </div>
 
                         {isRecurring && (
-                            <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                                <Select name="frequency" defaultValue={transactionToEdit?.frequency || "monthly"}>
-                                    <SelectTrigger className="bg-muted/30 border-border/50 text-foreground/80 h-9 w-full">
-                                        <SelectValue placeholder="Seleccionar frecuencia" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover border-border/50 text-foreground">
-                                        <SelectItem value="daily">Diaria</SelectItem>
-                                        <SelectItem value="weekly">Semanal</SelectItem>
-                                        <SelectItem value="bi-weekly">Quincenal</SelectItem>
-                                        <SelectItem value="monthly">Mensual</SelectItem>
-                                        <SelectItem value="yearly">Anual</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="pl-11 pr-2 animate-in slide-in-from-top-2 fade-in duration-200 space-y-3">
+                                <div>
+                                    <Label htmlFor="frequency" className="text-xs text-muted-foreground block mb-1">Frecuencia</Label>
+                                    <Select name="frequency" defaultValue={transactionToEdit?.frequency || "monthly"}>
+                                        <SelectTrigger className="bg-muted/30 border-border/50 text-foreground/80 h-9 w-full">
+                                            <SelectValue placeholder="Seleccionar frecuencia" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover border-border/50 text-foreground">
+                                            <SelectItem value="daily">Diaria</SelectItem>
+                                            <SelectItem value="weekly">Semanal</SelectItem>
+                                            <SelectItem value="bi-weekly">Quincenal</SelectItem>
+                                            <SelectItem value="monthly">Mensual</SelectItem>
+                                            <SelectItem value="yearly">Anual</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label htmlFor="recurringDay" className="text-xs text-muted-foreground block mb-1">Día del mes para iniciar recurrencia (1-31)</Label>
+                                    <Input 
+                                        type="number" 
+                                        id="recurringDay" 
+                                        name="recurringDay" 
+                                        min={1} 
+                                        max={31} 
+                                        placeholder="Ej: 15"
+                                        required
+                                        value={recurringDay ?? ''}
+                                        onChange={(e) => setRecurringDay(e.target.value ? Number(e.target.value) : undefined)}
+                                        className="bg-muted/30 border-border/50 text-foreground/80 h-9 w-full"
+                                    />
+                                </div>
                             </div>
                         )}
 

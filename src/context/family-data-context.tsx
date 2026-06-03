@@ -338,7 +338,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
       let change = 0;
       if (t.type === 'income') {
         change = t.amount;
-      } else if (t.type === 'expense') {
+      } else if (t.type === 'expense' || t.type === 'payment') {
         change = -t.amount;
       }
       map.set(t.accountId, current + change);
@@ -362,6 +362,8 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
           balance += t.amount;
         } else if (t.type === 'expense' && t.category !== 'credit-card-payment' && t.category !== 'debt-payment') {
           balance -= t.amount;
+        } else if (t.type === 'payment') {
+          balance -= t.amount;
         }
       }
     }
@@ -370,12 +372,22 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
 
   const creditCards = useMemo(() => {
     return creditCardsState.map(card => {
-        const spentDOP = transactions
+        const purchasesDOP = transactions
           .filter(t => t.creditCardId === card.id && t.type === 'expense' && t.currency === 'DOP')
           .reduce((acc, t) => acc + t.amount, 0);
-        const spentUSD = transactions
+        const paymentsDOP = transactions
+          .filter(t => t.creditCardId === card.id && t.type === 'payment' && t.currency === 'DOP')
+          .reduce((acc, t) => acc + t.amount, 0);
+        const spentDOP = purchasesDOP - paymentsDOP;
+
+        const purchasesUSD = transactions
           .filter(t => t.creditCardId === card.id && t.type === 'expense' && t.currency === 'USD')
           .reduce((acc, t) => acc + t.amount, 0);
+        const paymentsUSD = transactions
+          .filter(t => t.creditCardId === card.id && t.type === 'payment' && t.currency === 'USD')
+          .reduce((acc, t) => acc + t.amount, 0);
+        const spentUSD = purchasesUSD - paymentsUSD;
+
         return { ...card, spentDOP, spentUSD };
       });
   }, [transactions, creditCardsState]);
@@ -384,7 +396,7 @@ export function FamilyDataProvider({ children }: { children: ReactNode }) {
     return loansState.map(loan => {
         const initialPaidAmount = loan.paidAmount || 0;
         const transactionPayments = transactions
-          .filter(t => t.loanId === loan.id && t.type === 'expense')
+          .filter(t => t.loanId === loan.id && (t.type === 'expense' || t.type === 'payment'))
           .reduce((acc, t) => acc + t.amount, 0);
         return { ...loan, paidAmount: initialPaidAmount + transactionPayments };
       });

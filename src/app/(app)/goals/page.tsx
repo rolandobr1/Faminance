@@ -44,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFamilyData } from "@/context/family-data-context";
 import { Header } from "@/components/faminance/header";
 import { availableIcons, iconMap } from "@/lib/data";
-import { getNextDueDate } from "@/lib/services/recurring-service";
+import { getNextDueDate, getAlignedRecurringDate } from "@/lib/services/recurring-service";
 
 function GoalForm({
   goal,
@@ -63,17 +63,34 @@ function GoalForm({
   const [isRecurring, setIsRecurring] = useState(goal?.isRecurring || false);
   const [frequency, setFrequency] = useState<SavingsGoal['frequency']>(goal?.frequency || 'monthly');
   const [contributionAmount, setContributionAmount] = useState<number | undefined>(goal?.contributionAmount);
+  const [recurringDay, setRecurringDay] = useState<number | undefined>(goal?.recurringDay);
   
   useEffect(() => {
     setIsRecurring(goal?.isRecurring || false);
     setFrequency(goal?.frequency || 'monthly');
     setContributionAmount(goal?.contributionAmount);
+    setRecurringDay(goal?.recurringDay);
   }, [goal]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const currentAmount = formData.get('currentAmount') ? Number(formData.get('currentAmount')) : undefined;
+
+    const recurringDayVal = isRecurring ? (formData.get('recurringDay') ? Number(formData.get('recurringDay')) : undefined) : undefined;
+
+    let nextContributionDate = goal?.nextContributionDate;
+    if (isRecurring && frequency) {
+      if (!nextContributionDate || recurringDayVal !== goal?.recurringDay) {
+        let baseDate = new Date();
+        if (recurringDayVal) {
+          baseDate = getAlignedRecurringDate(baseDate, recurringDayVal);
+        } else {
+          baseDate = getNextDueDate(baseDate, frequency) || baseDate;
+        }
+        nextContributionDate = baseDate.toISOString();
+      }
+    }
 
     const newGoal: Omit<SavingsGoal, 'id' | 'currentAmount' | 'familyId'> = {
       name: formData.get('name') as string,
@@ -85,12 +102,8 @@ function GoalForm({
       isRecurring,
       ...(isRecurring && { frequency }),
       ...(isRecurring && contributionAmount !== undefined ? { contributionAmount } : {}),
-      // Set nextContributionDate: keep existing if editing, else start from next period
-      ...(isRecurring && frequency && {
-        nextContributionDate:
-          goal?.nextContributionDate ||
-          getNextDueDate(new Date(), frequency)?.toISOString(),
-      }),
+      ...(isRecurring && recurringDayVal !== undefined ? { recurringDay: recurringDayVal } : {}),
+      ...(isRecurring && nextContributionDate ? { nextContributionDate } : {}),
     };
     onSave(newGoal, currentAmount);
   };
@@ -201,6 +214,21 @@ function GoalForm({
                     <SelectItem value="yearly">Anual</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+            <Label htmlFor="recurringDay" className="text-left sm:text-right text-xs sm:text-sm">Día de cobro (1-31)</Label>
+            <Input
+              id="recurringDay"
+              name="recurringDay"
+              type="number"
+              min={1}
+              max={31}
+              value={recurringDay ?? ''}
+              onChange={(e) => setRecurringDay(e.target.value ? Number(e.target.value) : undefined)}
+              placeholder="Día del mes (Ej: 15)"
+              className="col-span-1 sm:col-span-3"
+              required
+            />
           </div>
         </>
       )}

@@ -12,12 +12,26 @@ import { OnboardingCard } from "@/components/faminance/dashboard/onboarding-card
 import { useAuth } from "@/context/auth-context";
 import { useFamilyData } from "@/context/family-data-context";
 
+import { Loader2 } from "lucide-react";
+
 export default function DashboardPage() {
-  const { transactions, categories, members, budgets, goals, loans, creditCards } = useFamilyData();
+  const { transactions, categories, members, budgets, goals, loans, creditCards, loading } = useFamilyData();
   const { currentUser } = useAuth();
   
   const userConfig = members.find(m => m.id === currentUser?.id);
   const showExpenseOverview = userConfig?.showExpenseOverview ?? true;
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Panel de Control" />
+        <main className="flex flex-col items-center justify-center min-h-[50vh] p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-slate-400 mt-2 animate-pulse">Cargando datos de Faminance...</p>
+        </main>
+      </>
+    );
+  }
 
   const isDashboardEmpty = 
     transactions.length === 0 && 

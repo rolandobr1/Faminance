@@ -113,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Cargando..." />
         </div>
       ) : (
-        <div className="flex min-h-screen w-full flex-col bg-transparent">
+        <div className="flex min-h-screen w-full flex-col bg-transparent overflow-x-hidden">
             {/* Expandable Hover Sidebar */}
             <aside className="fixed inset-y-0 left-0 z-10 hidden w-16 hover:w-48 transition-all duration-300 ease-in-out flex-col border-r glass-card sm:flex group/sidebar">
             <nav className="flex flex-col items-center group-hover/sidebar:items-start gap-4 px-2 sm:py-5 w-full">

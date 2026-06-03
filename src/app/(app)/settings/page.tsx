@@ -277,6 +277,8 @@ export default function SettingsPage() {
 
         if (parentId && parentId !== 'none') {
             categoryData.parentId = parentId;
+        } else {
+            categoryData.parentId = null;
         }
 
         try {

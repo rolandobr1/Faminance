@@ -8,9 +8,37 @@ import {
 } from 'date-fns';
 import type { Transaction, SavingsGoal } from '../types';
 
+export function getAlignedRecurringDate(
+  baseDateStrOrObj: string | Date,
+  recurringDay: number
+): Date {
+  const baseDate = typeof baseDateStrOrObj === 'string' ? parseISO(baseDateStrOrObj) : baseDateStrOrObj;
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth();
+  
+  // Set to target day in the current month
+  const targetDate = new Date(year, month, 1, 12, 0, 0);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  targetDate.setDate(Math.min(recurringDay, daysInMonth));
+  
+  // Reset base comparison date to 12:00 to avoid hours mismatch
+  const baseCompare = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 12, 0, 0);
+  
+  if (targetDate < baseCompare) {
+    // If it's in the past relative to the base date, start in the next month
+    const nextMonth = new Date(year, month + 1, 1, 12, 0, 0);
+    const daysInNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    nextMonth.setDate(Math.min(recurringDay, daysInNextMonth));
+    return nextMonth;
+  }
+  
+  return targetDate;
+}
+
 export function getNextDueDate(
   startDate: string | Date,
-  frequency: Transaction['frequency']
+  frequency: Transaction['frequency'],
+  recurringDay?: number
 ): Date | null {
   const date = typeof startDate === 'string' ? parseISO(startDate) : startDate;
 
@@ -22,8 +50,20 @@ export function getNextDueDate(
     case 'bi-weekly':
       return addWeeks(date, 2);
     case 'monthly':
+      if (recurringDay && recurringDay >= 1 && recurringDay <= 31) {
+        const nextMonth = addMonths(date, 1);
+        const daysInMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+        const clampedDay = Math.min(recurringDay, daysInMonth);
+        return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampedDay, 12, 0, 0);
+      }
       return addMonths(date, 1);
     case 'yearly':
+      if (recurringDay && recurringDay >= 1 && recurringDay <= 31) {
+        const nextYear = addYears(date, 1);
+        const daysInMonth = new Date(nextYear.getFullYear(), nextYear.getMonth() + 1, 0).getDate();
+        const clampedDay = Math.min(recurringDay, daysInMonth);
+        return new Date(nextYear.getFullYear(), nextYear.getMonth(), clampedDay, 12, 0, 0);
+      }
       return addYears(date, 1);
     default:
       return null;
@@ -56,7 +96,7 @@ export async function processRecurringTransactions(
         newTransactions.push(addTransaction(newTransactionData));
 
         // 2. Calculate the *next* next due date for the recurring template
-        const newNextDueDate = getNextDueDate(nextDueDate, t.frequency);
+        const newNextDueDate = getNextDueDate(nextDueDate, t.frequency, t.recurringDay);
         
         if (newNextDueDate) {
           nextDueDate = newNextDueDate;
@@ -140,7 +180,7 @@ export async function processRecurringSavings(
       operations.push(addTransaction(transactionData));
       accumulatedAmount += contributionThisCycle;
 
-      const newNextDate = getNextDueDate(nextDate, goal.frequency);
+      const newNextDate = getNextDueDate(nextDate, goal.frequency, goal.recurringDay);
       if (newNextDate) {
         nextDate = newNextDate;
       } else {
@@ -232,7 +272,7 @@ export async function processRecurringDeposits(
       operations.push(addTransaction(expenseData));
       operations.push(addTransaction(incomeData));
 
-      const newNextDate = getNextDueDate(nextDate, account.depositFrequency);
+      const newNextDate = getNextDueDate(nextDate, account.depositFrequency, account.recurringDay);
       if (newNextDate) {
         nextDate = newNextDate;
       } else {

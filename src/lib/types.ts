@@ -15,7 +15,7 @@ export type Transaction = FirestoreDocument & {
   date: string;
   description?: string;
   amount: number;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'payment';
   currency: 'DOP' | 'USD';
   category: string;
   paymentMethod: 'Tarjeta de Crédito' | 'Tarjeta de Débito' | 'Transferencia Bancaria' | 'Efectivo' | 'Pago de Tarjeta';
@@ -28,6 +28,7 @@ export type Transaction = FirestoreDocument & {
   isRecurring?: boolean;
   frequency?: RecurringFrequency;
   nextDueDate?: string; // New field for recurring transactions
+  recurringDay?: number; // Chosen day of the month for recurrence (1-31)
   budgetId?: string;
   loanId?: string;
   goalId?: string; // Link to savings goal for automatic contributions
@@ -62,6 +63,7 @@ export type SavingsGoal = FirestoreDocument & {
   frequency?: RecurringFrequency;
   contributionAmount?: number;
   nextContributionDate?: string;
+  recurringDay?: number; // Chosen day of the month for recurrence (1-31)
 };
 
 export type User = {
@@ -86,6 +88,7 @@ export type Account = FirestoreDocument & {
   depositSourceAccountId?: string; // "cash" or an account ID
   depositCategory?: string; // User selected category for the deposit expense
   nextDepositDate?: string;
+  recurringDay?: number; // Chosen day of the month for recurrence (1-31)
 };
 
 export type CreditCard = FirestoreDocument & {

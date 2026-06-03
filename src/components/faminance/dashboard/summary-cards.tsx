@@ -113,8 +113,8 @@ export function SummaryCards() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Link href="/debts" passHref>
-                                        <Button variant="ghost" size="icon" className="border-2 border-primary/20 rounded-lg bg-primary/10 text-primary/80 h-9 w-9">
-                                            <CreditCard className="h-5 w-5" />
+                                        <Button variant="ghost" size="icon" className="border border-primary/20 rounded-lg bg-primary/10 text-primary/80 h-9 w-9">
+                                            <CreditCard className="h-4 w-4" />
                                         </Button>
                                     </Link>
                                 </TooltipTrigger>
@@ -125,8 +125,8 @@ export function SummaryCards() {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Link href="/goals" passHref>
-                                        <Button variant="ghost" size="icon" className="border-2 border-green-500/20 rounded-lg bg-green-500/10 text-green-400 h-9 w-9">
-                                            <ShieldCheck className="h-5 w-5" />
+                                        <Button variant="ghost" size="icon" className="border border-green-500/20 rounded-lg bg-green-500/10 text-green-400 h-9 w-9">
+                                            <ShieldCheck className="h-4 w-4" />
                                         </Button>
                                     </Link>
                                 </TooltipTrigger>

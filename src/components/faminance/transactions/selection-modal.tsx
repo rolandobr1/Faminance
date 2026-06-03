@@ -17,6 +17,7 @@ export interface SelectionOption {
 }
 
 interface SelectionModalProps {
+    id?: string;
     title: string;
     options: SelectionOption[];
     selected?: SelectionOption;
@@ -24,7 +25,7 @@ interface SelectionModalProps {
     disabled?: boolean;
 }
 
-export function SelectionModal({ title, options, selected, onSelect, disabled = false }: SelectionModalProps) {
+export function SelectionModal({ id, title, options, selected, onSelect, disabled = false }: SelectionModalProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -49,21 +50,13 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
 
     // Group options by parent
     const groupedOptions = useMemo(() => {
-        const hasHierarchy = options.some(o => o.parentId);
+        const hasHierarchy = options.some(o => o.parentId && o.parentId !== 'none' && o.parentId !== '');
         if (!hasHierarchy) return { isFlat: true, items: filteredOptions };
 
-        const rootOptions = filteredOptions.filter(o => !o.parentId);
-        const subOptions = filteredOptions.filter(o => o.parentId);
-        
+        const allRoots = options.filter(o => !o.parentId || o.parentId === 'none' || o.parentId === '');
         const groups: { parent: SelectionOption, children: SelectionOption[] }[] = [];
         
-        // If we are searching, we might find a subcategory but not the parent. 
-        // We will just show matching items. To keep it simple, we group by parent if the parent is also in the list, 
-        // otherwise we just show them under a "Resultados" group or their actual parent if we can find it in the original options.
-        
         // Let's use the original options to build the tree, then filter the tree
-        const allRoots = options.filter(o => !o.parentId);
-        
         allRoots.forEach(root => {
             const children = options.filter(o => o.parentId === root.value);
             // Check if root or any child matches search
@@ -79,7 +72,7 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
         });
 
         // Add orphans (subcategories whose parent somehow doesn't exist)
-        const orphans = filteredOptions.filter(o => o.parentId && !allRoots.some(r => r.value === o.parentId));
+        const orphans = filteredOptions.filter(o => o.parentId && o.parentId !== 'none' && o.parentId !== '' && !allRoots.some(r => r.value === o.parentId));
         
         return { isFlat: false, groups, orphans };
     }, [options, filteredOptions, searchQuery]);
@@ -88,6 +81,7 @@ export function SelectionModal({ title, options, selected, onSelect, disabled = 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button 
+                    id={id}
                     type="button"
                     variant="outline" 
                     className="w-full justify-start text-left h-auto py-2 bg-muted/20 border-border/50 hover:bg-muted/50 hover:border-border transition-colors"

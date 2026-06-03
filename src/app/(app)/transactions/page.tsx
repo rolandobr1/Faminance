@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
+import { useIsMobile } from "@/hooks/use-mobile";
 import { FloatingTransactionButtons } from "@/components/faminance/transactions/floating-action-buttons";
 import { AddTransactionSheet } from "@/components/faminance/transactions/add-transaction-sheet";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ export default function TransactionsPage() {
   } = useTransactionsPage();
 
   const [mounted, setMounted] = React.useState(false);
+  const isMobile = useIsMobile();
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -128,7 +130,7 @@ export default function TransactionsPage() {
                             defaultMonth={date?.from}
                             selected={date}
                             onSelect={setDate}
-                            numberOfMonths={2}
+                            numberOfMonths={isMobile ? 1 : 2}
                             locale={es}
                         />
                         </PopoverContent>

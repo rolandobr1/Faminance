@@ -154,7 +154,7 @@ export function TransactionTable({
                                             </div>
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">{transaction.user}</TableCell>
-                                        <TableCell className={cn("text-right", transaction.type === 'income' ? 'text-green-600' : 'text-destructive')}>
+                                        <TableCell className={cn("text-right", transaction.type === 'income' ? 'text-green-600' : (transaction.type === 'payment' ? 'text-blue-500 dark:text-blue-400' : 'text-destructive'))}>
                                             <div className="flex items-center justify-end gap-2">
                                                 {transaction.receiptUrl && (
                                                     <a

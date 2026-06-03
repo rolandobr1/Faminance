@@ -12,7 +12,7 @@ import type { Account, Category } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { getNextDueDate } from "@/lib/services/recurring-service";
+import { getNextDueDate, getAlignedRecurringDate } from "@/lib/services/recurring-service";
 
 const accountFormSchema = z.object({
     name: z.string().min(1, "El nombre es requerido."),
@@ -32,6 +32,10 @@ const accountFormSchema = z.object({
     depositFrequency: z.enum(['daily', 'weekly', 'bi-weekly', 'monthly', 'yearly']).optional(),
     depositSourceAccountId: z.string().optional(),
     depositCategory: z.string().optional(),
+    recurringDay: z.preprocess(
+        (val) => (val === '' || val === undefined ? undefined : typeof val === 'string' ? parseInt(val) : val),
+        z.number().min(1, "El día debe ser entre 1 y 31").max(31, "El día debe ser entre 1 y 31").optional()
+    ),
 });
 
 export type AccountFormValues = z.infer<typeof accountFormSchema>;
@@ -63,6 +67,7 @@ export function AccountForm({
             depositFrequency: account?.depositFrequency,
             depositSourceAccountId: account?.depositSourceAccountId,
             depositCategory: account?.depositCategory || 'saving-contribution',
+            recurringDay: account?.recurringDay,
         },
     });
 
@@ -70,8 +75,16 @@ export function AccountForm({
 
     function onSubmit(data: AccountFormValues) {
         let nextDepositDate = account?.nextDepositDate;
-        if (data.isRecurringDeposit && data.depositFrequency && !nextDepositDate) {
-            nextDepositDate = getNextDueDate(new Date(), data.depositFrequency)?.toISOString();
+        if (data.isRecurringDeposit && data.depositFrequency) {
+            if (!nextDepositDate || data.recurringDay !== account?.recurringDay) {
+                let baseDate = new Date();
+                if (data.recurringDay) {
+                    baseDate = getAlignedRecurringDate(baseDate, data.recurringDay);
+                } else {
+                    baseDate = getNextDueDate(baseDate, data.depositFrequency) || baseDate;
+                }
+                nextDepositDate = baseDate.toISOString();
+            }
         }
         
         onSave({
@@ -201,6 +214,28 @@ export function AccountForm({
                                         </SelectContent>
                                     </Select>
                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="recurringDay"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Día del mes para el aporte (1-31)</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Ej: 15" 
+                                            {...field} 
+                                            value={field.value ?? ''} 
+                                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                            min={1}
+                                            max={31}
+                                            required
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
