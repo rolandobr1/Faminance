@@ -104,10 +104,15 @@ export function ExpenseOverview({ transactions, categories }: ExpenseOverviewPro
                   </Pie>
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: '#0d121f',
-                      borderColor: 'rgba(255,255,255,0.08)',
+                      backgroundColor: 'hsl(var(--popover))',
+                      borderColor: 'hsl(var(--border))',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: 'hsl(var(--popover-foreground))',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                    }}
+                    itemStyle={{
+                      color: 'hsl(var(--popover-foreground))',
+                      fontWeight: 600
                     }}
                     formatter={(value: any) => [
                       Number(value).toLocaleString('es-DO', { style: 'currency', currency: 'DOP' }),

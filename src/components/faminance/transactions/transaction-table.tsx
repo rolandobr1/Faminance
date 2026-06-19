@@ -121,24 +121,28 @@ export function TransactionTable({
     const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     return (
-        <div>
-            {sortedDates.map(date => (
-                <div key={date} className="mb-6">
-                    <div className="sticky top-14 z-20 py-2 flex w-full pointer-events-none mb-1">
-                        <h3 className="text-sm font-medium font-headline backdrop-blur-xl bg-background/70 border border-border/50 shadow-sm px-4 py-1.5 rounded-full pointer-events-auto inline-flex">
-                            {format(getLocalDisplayDate(date), "EEEE, d 'de' MMMM", { locale: es })}
-                        </h3>
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Transacción</TableHead>
-                                <TableHead className="hidden md:table-cell">Usuario</TableHead>
-                                <TableHead className="text-right">Monto</TableHead>
-                                <TableHead><span className="sr-only">Acciones</span></TableHead>
+        <div className="border rounded-md">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[45%] md:w-[40%]">Transacción</TableHead>
+                        <TableHead className="hidden md:table-cell w-[20%]">Usuario</TableHead>
+                        <TableHead className="text-right w-[40%] md:w-[30%]">Monto</TableHead>
+                        <TableHead className="w-[15%] md:w-[10%]"><span className="sr-only">Acciones</span></TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {sortedDates.map(date => (
+                        <React.Fragment key={date}>
+                            <TableRow className="hover:bg-transparent border-b-0 bg-muted/30">
+                                <TableCell colSpan={4} className="py-2 px-4">
+                                    <div className="flex w-full">
+                                        <h3 className="text-sm font-medium font-headline">
+                                            {format(getLocalDisplayDate(date), "EEEE, d 'de' MMMM", { locale: es })}
+                                        </h3>
+                                    </div>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
                             {groupedTransactions[date].map(transaction => {
                                 const category = categories.find(c => c.value === transaction.category);
                                 const CategoryIcon = category ? iconMap[category.icon] : null;
@@ -146,10 +150,10 @@ export function TransactionTable({
                                     <TableRow key={transaction.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                {CategoryIcon && <div className="hidden sm:flex items-center justify-center h-8 w-8 rounded-full bg-muted"><CategoryIcon className="h-5 w-5 text-muted-foreground" /></div>}
-                                                <div>
-                                                    <div className="font-medium font-headline">{category?.label || transaction.category}</div>
-                                                    {transaction.description && <div className="text-sm text-muted-foreground">{transaction.description}</div>}
+                                                {CategoryIcon && <div className="hidden sm:flex items-center justify-center h-8 w-8 rounded-full bg-muted shrink-0"><CategoryIcon className="h-5 w-5 text-muted-foreground" /></div>}
+                                                <div className="min-w-0">
+                                                    <div className="font-medium font-headline truncate">{category?.label || transaction.category}</div>
+                                                    {transaction.description && <div className="text-sm text-muted-foreground truncate">{transaction.description}</div>}
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -168,7 +172,7 @@ export function TransactionTable({
                                                         <Receipt className="h-4 w-4" />
                                                     </a>
                                                 )}
-                                                <span>
+                                                <span className="whitespace-nowrap">
                                                     {transaction.type === 'income' ? '+' : '-'}
                                                     {transaction.amount.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
                                                 </span>
@@ -206,10 +210,10 @@ export function TransactionTable({
                                     </TableRow>
                                 );
                             })}
-                        </TableBody>
-                    </Table>
-                </div>
-            ))}
+                        </React.Fragment>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
     );
 }
