@@ -61,7 +61,8 @@ export function BudgetForm({
     }));
 
   return (
-     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto pr-2 pb-2 grid gap-4">
          <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
             <Label htmlFor="category" className="text-left sm:text-right text-xs sm:text-sm">
             Categoría
@@ -97,7 +98,8 @@ export function BudgetForm({
                 </SelectContent>
             </Select>
         </div>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="pt-4 mt-2 border-t shrink-0">
             <DialogClose asChild>
                 <Button variant="outline">Cancelar</Button>
             </DialogClose>

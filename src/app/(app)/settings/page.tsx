@@ -428,20 +428,21 @@ export default function SettingsPage() {
                                     Añadir Miembro
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                                 <DialogHeader>
                                 <DialogTitle>Añadir Nuevo Miembro</DialogTitle>
                                 <DialogDescription>
                                     Añada un nuevo miembro a la familia.
                                 </DialogDescription>
                                 </DialogHeader>
-                                <form onSubmit={handleInviteMember} className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="new-member-name" className="text-right">Nombre</Label>
-                                    <Input id="new-member-name" name="new-member-name" placeholder="Ej: Carlos" className="col-span-3" required />
+                                <form onSubmit={handleInviteMember} className="flex flex-col flex-1 min-h-0">
+                                <div className="flex-1 overflow-y-auto pr-2 pb-2 grid gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                                    <Label htmlFor="new-member-name" className="text-left sm:text-right text-xs sm:text-sm">Nombre</Label>
+                                    <Input id="new-member-name" name="new-member-name" placeholder="Ej: Carlos" className="col-span-1 sm:col-span-3" required />
                                 </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="new-member-role" className="text-right">Rol</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                                    <Label htmlFor="new-member-role" className="text-left sm:text-right text-xs sm:text-sm">Rol</Label>
                                     <Select name="new-member-role" defaultValue="Usuario">
                                         <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
                                         <SelectContent>
@@ -450,11 +451,12 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="new-member-allowance" className="text-right">Mesada (RD$)</Label>
-                                    <Input id="new-member-allowance" name="new-member-allowance" type="number" placeholder="Opcional" className="col-span-3" />
+                                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                                    <Label htmlFor="new-member-allowance" className="text-left sm:text-right text-xs sm:text-sm">Mesada (RD$)</Label>
+                                    <Input id="new-member-allowance" name="new-member-allowance" type="number" placeholder="Opcional" className="col-span-1 sm:col-span-3" />
                                 </div>
-                                <DialogFooter>
+                                </div>
+                                <DialogFooter className="pt-4 mt-2 border-t shrink-0">
                                     <DialogClose asChild><Button variant="outline" type="button">Cancelar</Button></DialogClose>
                                     <Button type="submit" disabled={isSubmitting}>Añadir</Button>
                                 </DialogFooter>
@@ -557,19 +559,20 @@ export default function SettingsPage() {
                 setCategoryDialogOpen(true);
             }
        }}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>{editingCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}</DialogTitle>
                 </DialogHeader>
-                 <form onSubmit={handleCategorySubmit} className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="label" className="text-right">
+                 <form onSubmit={handleCategorySubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto pr-2 pb-2 grid gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="label" className="text-left sm:text-right text-xs sm:text-sm">
                         Nombre
                         </Label>
-                        <Input id="label" name="label" defaultValue={editingCategory?.label} placeholder="Ej: Pasatiempos" className="col-span-3" />
+                        <Input id="label" name="label" defaultValue={editingCategory?.label} placeholder="Ej: Pasatiempos" className="col-span-1 sm:col-span-3" />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="type" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="type" className="text-left sm:text-right text-xs sm:text-sm">
                         Tipo
                         </Label>
                         <Select name="type" defaultValue={editingCategory?.type || 'expense'} onValueChange={(v) => {
@@ -586,12 +589,12 @@ export default function SettingsPage() {
                         </Select>
                     </div>
                     
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="parentId" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="parentId" className="text-left sm:text-right text-xs sm:text-sm">
                         Categoría Padre
                         </Label>
                         <Select name="parentId" defaultValue={editingCategory?.parentId || 'none'}>
-                            <SelectTrigger className="col-span-3">
+                            <SelectTrigger className="col-span-1 sm:col-span-3">
                                 <SelectValue placeholder="Principal (Ninguna)" />
                             </SelectTrigger>
                             <SelectContent>
@@ -602,12 +605,12 @@ export default function SettingsPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="icon" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="icon" className="text-left sm:text-right text-xs sm:text-sm">
                         Icono
                         </Label>
                         <Select name="icon" defaultValue={editingCategory?.icon}>
-                            <SelectTrigger className="col-span-3">
+                            <SelectTrigger className="col-span-1 sm:col-span-3">
                                 <SelectValue placeholder="Seleccionar un icono" />
                             </SelectTrigger>
                             <SelectContent>
@@ -622,7 +625,8 @@ export default function SettingsPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <DialogFooter>
+                    </div>
+                    <DialogFooter className="pt-4 mt-2 border-t shrink-0">
                         <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
                         <Button type="submit">Guardar Cambios</Button>
                     </DialogFooter>
@@ -631,27 +635,29 @@ export default function SettingsPage() {
         </Dialog>
 
        <Dialog open={!!editingUser} onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Editar Miembro de la Familia</DialogTitle>
                     <DialogDescription>Ajuste el rol o mesada de {editingUser?.name}.</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleEditRoleSubmit} className="grid gap-6 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="role" className="text-right">Rol</Label>
+                <form onSubmit={handleEditRoleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto pr-2 pb-2 grid gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="role" className="text-left sm:text-right text-xs sm:text-sm">Rol</Label>
                         <Select name="role" defaultValue={editingUser?.role}>
-                            <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="col-span-1 sm:col-span-3"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Admin">Admin</SelectItem>
                                 <SelectItem value="Usuario">Usuario</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="allowance" className="text-right">Mesada (RD$)</Label>
-                        <Input id="allowance" name="allowance" type="number" placeholder="0" defaultValue={editingUser?.allowance ?? ''} className="col-span-3" />
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="allowance" className="text-left sm:text-right text-xs sm:text-sm">Mesada (RD$)</Label>
+                        <Input id="allowance" name="allowance" type="number" placeholder="0" defaultValue={editingUser?.allowance ?? ''} className="col-span-1 sm:col-span-3" />
                     </div>
-                    <DialogFooter>
+                    </div>
+                    <DialogFooter className="pt-4 mt-2 border-t shrink-0">
                         <DialogClose asChild>
                             <Button type="button" variant="outline">Cancelar</Button>
                         </DialogClose>

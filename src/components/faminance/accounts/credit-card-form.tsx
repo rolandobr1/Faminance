@@ -65,7 +65,8 @@ export function CreditCardForm({
     
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto pr-2 pb-2 space-y-4">
                  <FormField
                     control={form.control}
                     name="name"
@@ -157,8 +158,8 @@ export function CreditCardForm({
                         </FormItem>
                     )}
                 />
-
-                <DialogFooter className="pt-4">
+                </div>
+                <DialogFooter className="pt-4 mt-2 border-t shrink-0">
                     <DialogClose asChild>
                         <Button type="button" variant="outline">Cancelar</Button>
                     </DialogClose>

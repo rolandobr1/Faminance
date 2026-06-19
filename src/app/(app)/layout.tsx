@@ -150,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             
             {/* Mobile Navigation — center elevated + button */}
             {showBottomNav && (
-                <footer className="fixed inset-x-0 bottom-0 z-30 sm:hidden" style={{ overflow: 'visible' }}>
+                <footer className="fixed inset-x-0 bottom-0 z-30 sm:hidden pb-[env(safe-area-inset-bottom)]" style={{ overflow: 'visible' }}>
                     <div className="relative">
                         {/* Elevated glass + button */}
                         <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-10">

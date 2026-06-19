@@ -81,7 +81,7 @@ export default function TransactionsPage() {
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 pb-20 sm:pb-0">
         
          <div className="flex flex-col gap-2">
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row flex-wrap items-center gap-2">
                 <Button variant={activePreset === 'thisMonth' ? 'default' : 'outline'} onClick={() => setDatePreset('thisMonth')} className="flex-grow sm:flex-grow-0">Este Mes</Button>
                 <Button variant={activePreset === 'lastMonth' ? 'default' : 'outline'} onClick={() => setDatePreset('lastMonth')} className="flex-grow sm:flex-grow-0">Mes Pasado</Button>
                 <Button variant={activePreset === 'thisYear' ? 'default' : 'outline'} onClick={() => setDatePreset('thisYear')} className="flex-grow sm:flex-grow-0">Este Año</Button>

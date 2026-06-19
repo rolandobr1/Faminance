@@ -190,14 +190,14 @@ function BudgetCard({
             </Card>
             </DialogTrigger>
 
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden mx-auto">
                 <DialogHeader>
                     <DialogTitle>Transacciones en &quot;{budget.categoryInfo?.label}&quot;</DialogTitle>
                     <DialogDescription>
                         Aquí están todas las transacciones para la categoría del presupuesto seleccionado.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto">
+                <div className="flex-1 overflow-y-auto pr-2 min-h-0">
                     <TransactionTable 
                         transactions={selectedBudgetTransactions}
                         onEdit={handleEditTransaction}
@@ -375,7 +375,7 @@ export default function BudgetsPage() {
       </main>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Crear Nuevo Presupuesto</DialogTitle>
                     <DialogDescription>
@@ -387,7 +387,7 @@ export default function BudgetsPage() {
         </Dialog>
 
       <Dialog open={!!editingBudget} onOpenChange={(isOpen) => !isOpen && setEditingBudget(undefined)}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Editar Presupuesto</DialogTitle>
                     <DialogDescription>

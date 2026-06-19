@@ -419,24 +419,24 @@ export default function AccountsPage() {
                     setEditingCard(undefined);
                 }
             }}>
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent className="sm:max-w-[625px] max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                     <DialogHeader>
                     <DialogTitle>{editingAccount ? "Editar Cuenta" : editingCard ? "Editar Tarjeta de Crédito" : "Añadir Nueva Cuenta o Tarjeta"}</DialogTitle>
                     <DialogDescription>
                         {editingAccount ? "Ajuste los detalles de su cuenta." : editingCard ? "Ajuste los detalles de su tarjeta." : "Seleccione el tipo que desea añadir y complete la información."}
                     </DialogDescription>
                 </DialogHeader>
-                <Tabs defaultValue={editingCard ? "card" : "account"} className="w-full">
+                <Tabs defaultValue={editingCard ? "card" : "account"} className="w-full flex flex-col min-h-0 flex-1 overflow-hidden">
                     {!editingAccount && !editingCard && (
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-2 shrink-0">
                             <TabsTrigger value="account">Cuenta Bancaria</TabsTrigger>
                             <TabsTrigger value="card">Tarjeta de Crédito</TabsTrigger>
                         </TabsList>
                     )}
-                    <TabsContent value="account">
+                    <TabsContent value="account" className="flex-1 overflow-hidden flex flex-col m-0 mt-2">
                         <AccountForm account={editingAccount} accounts={accounts} categories={categories} onSave={handleSaveAccount} onClose={() => { setCreateOpen(false); setEditingAccount(undefined); }} isSubmitting={isSubmitting} />
                     </TabsContent>
-                    <TabsContent value="card">
+                    <TabsContent value="card" className="flex-1 overflow-hidden flex flex-col m-0 mt-2">
                         <CreditCardForm card={editingCard} onSave={handleSaveCreditCard} onClose={() => { setCreateOpen(false); setEditingCard(undefined); }} isSubmitting={isSubmitting} />
                     </TabsContent>
                 </Tabs>

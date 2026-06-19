@@ -109,7 +109,8 @@ function GoalForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto pr-2 pb-2 grid gap-4">
       <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
         <Label htmlFor="name" className="text-left sm:text-right text-xs sm:text-sm">Nombre</Label>
         <Input id="name" name="name" defaultValue={goal?.name} className="col-span-1 sm:col-span-3" required />
@@ -232,7 +233,8 @@ function GoalForm({
           </div>
         </>
       )}
-      <DialogFooter>
+      </div>
+      <DialogFooter className="pt-4 mt-2 border-t shrink-0">
         <DialogClose asChild>
           <Button type="button" variant="outline">Cancelar</Button>
         </DialogClose>
@@ -433,7 +435,7 @@ export default function GoalsPage() {
       </main>
 
         <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Crear Nueva Meta de Ahorro</DialogTitle>
                     <DialogDescription>
@@ -445,7 +447,7 @@ export default function GoalsPage() {
         </Dialog>
 
         <Dialog open={!!editingGoal} onOpenChange={(isOpen) => !isOpen && setEditingGoal(undefined)}>
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Editar Meta de Ahorro</DialogTitle>
                     <DialogDescription>Ajuste los detalles de su meta.</DialogDescription>
