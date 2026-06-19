@@ -289,6 +289,7 @@ export function AccountForm({
                             )}
                         />
                     </div>
+                )}
                 </div>
                 <DialogFooter className="pt-4 mt-2 border-t shrink-0">
                     <DialogClose asChild>
